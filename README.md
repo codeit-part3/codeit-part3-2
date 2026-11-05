@@ -51,3 +51,5 @@ git config --global alias.lg "log --color --graph --pretty=format:'%C(bold blue)
 
 `.pre-commit-config.yaml`에 정리 규칙이 있고, 커밋할 때와 PR을 올릴 때 같은 검사가 돌아갑니다.
 직접 돌려 보려면 `uvx prek run --all-files`.
+
+## 참고
