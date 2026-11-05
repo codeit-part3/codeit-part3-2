@@ -48,8 +48,19 @@ git config --global alias.lg "log --color --graph --pretty=format:'%C(bold blue)
 | Issue / PR | `[타입] 작업 내용` | `[Feat] BM25 검색 추가` |
 
 ## 🧹 코드 스타일 (자동)
-
 `.pre-commit-config.yaml`에 정리 규칙이 있고, 커밋할 때와 PR을 올릴 때 같은 검사가 돌아갑니다.
 직접 돌려 보려면 `uvx prek run --all-files`.
 
+## 개발 일지
+
+팀원별 개발 일지입니다. 이름을 누르면 해당 팀원의 캘린더 페이지로 이동합니다.
+
 ## 참고
+| 팀원 | 일지 |
+|---|---|
+| 서동현 | [📝 개발 일지](https://app.notion.com/p/40f77fa64f7f803db89ffc7206703cc3?source=copy_link) |
+| 김건 | [📝 개발 일지](https://app.notion.com/p/40f77fa64f7f802c998fd9670e7efa66?source=copy_link) |
+| 김주희 | [📝 개발 일지](https://app.notion.com/p/40f77fa64f7f8051acddfd0718139e6d?source=copy_link) |
+| 김라희 | [📝 개발 일지](https://app.notion.com/p/40f77fa64f7f80d29398f9eef19d229a?source=copy_link) |
+| 이주엽 | [📝 개발 일지](https://app.notion.com/p/40f77fa64f7f808c9718c92bb7b3d518?source=copy_link) |
+| 신재민 | [📝 개발 일지](https://app.notion.com/p/40f77fa64f7f80418065d1c7eef28a33?source=copy_link) |
