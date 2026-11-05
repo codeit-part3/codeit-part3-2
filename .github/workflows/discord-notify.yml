@@ -1,0 +1,39 @@
+name: discord-notify
+
+on:
+  pull_request:
+    types: [opened, reopened, ready_for_review, closed]
+
+jobs:
+  notify:
+    runs-on: ubuntu-latest
+    # 웹훅 주소가 Secrets에 등록되기 전에는 아무것도 하지 않고 넘어갑니다.
+    env:
+      WEBHOOK: ${{ secrets.DISCORD_WEBHOOK_URL }}
+    steps:
+      - name: Discord로 PR 알림 보내기
+        if: env.WEBHOOK != ''
+        env:
+          # 제목 등은 환경 변수로만 전달합니다 (셸 명령에 직접 끼워 넣지 않기)
+          PR_TITLE: ${{ github.event.pull_request.title }}
+          PR_URL: ${{ github.event.pull_request.html_url }}
+          PR_USER: ${{ github.event.pull_request.user.login }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          PR_ACTION: ${{ github.event.action }}
+          PR_MERGED: ${{ github.event.pull_request.merged }}
+        run: |
+          if [ "$PR_ACTION" = "closed" ]; then
+            if [ "$PR_MERGED" = "true" ]; then
+              STATUS="머지됨 ✅"
+            else
+              STATUS="닫힘 (머지 안 됨) ❌"
+            fi
+          else
+            STATUS="리뷰 요청 👀"
+          fi
+          jq -n \
+            --arg content "**PR #${PR_NUMBER}** ${STATUS}
+          ${PR_TITLE} (by ${PR_USER})
+          ${PR_URL}" \
+            '{content: $content}' \
+            | curl -sS -X POST -H "Content-Type: application/json" -d @- "$WEBHOOK"

@@ -1,0 +1,27 @@
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+.ruff_cache/
+.pytest_cache/
+
+# 환경 변수 / 비밀 값 (절대 커밋 금지)
+.env
+.env.*
+!.env.example
+
+# 데이터와 인덱스 (이용 조건 확인 전까지 올리지 않음)
+/data/
+/indexes/
+*.faiss
+*.pkl
+
+# Claude / AI 도구 (개인 설정과 결과물)
+.claude/settings.local.json
+outputs/
+
+# 에디터 / OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db

@@ -1,0 +1,19 @@
+repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v6.0.0
+    hooks:
+      - id: trailing-whitespace      # 줄 끝 공백 제거
+      - id: end-of-file-fixer        # 파일 끝 줄바꿈 맞추기
+      - id: check-yaml
+      - id: check-json
+      - id: check-toml
+      - id: check-added-large-files  # 큰 파일 커밋 방지
+      - id: check-merge-conflict     # 충돌 표시 남은 파일 방지
+
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.17.0
+    hooks:
+      - id: ruff-check
+        name: ruff check fix
+        args: [--select, "B,E,F,I,UP,SIM", --fix, --ignore, E501]
+      - id: ruff-format

@@ -1,0 +1,24 @@
+name: pre-commit
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+jobs:
+  pre-commit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v5
+      - name: 로컬 pre-commit과 같은 검사 실행
+        run: uvx prek run --all-files --show-diff-on-failure
+
+  # 코드가 생기면 아래 자리에 스모크 테스트와 폴더 경계 검사를 추가하세요.
+  # smoke-test:
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #     - uses: actions/checkout@v4
+  #     - uses: astral-sh/setup-uv@v5
+  #     - run: uv sync
+  #     - run: uv run python scripts/smoke_test.py
