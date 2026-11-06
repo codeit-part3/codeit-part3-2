@@ -1,0 +1,455 @@
+/*
+ *
+ * 디자인 방향
+ *   - 대화 영역은 판 없이 배경 위에 바로 올리고, 탭·입력창만 으로 떠 있게 합니다.
+ *   - 색은 흑백 모노톤입니다. 내 말풍선은 평평한 먹색, 답변 말풍선은 반투명 유리입니다.
+ *   - 유리의 가장자리는 얇은 흰 선과 안쪽 하이라이트(--glass-edge)로 표현합니다.
+ *
+ * 구성: 변수  배경  폭과 여백  제목  탭  대화  입력창  작은 화면  움직임 줄이기
+ * 색이나 둥글기를 바꾸고 싶다면 1번의 변수만 수정하면 됩니다.
+ */
+
+/* 변수 */
+:root {
+    --ink: #1c1c1e;
+    --ink-soft: #6c6c70;
+    --accent: #1d1d1f; /* 포인트 색: 선택된 탭, 내 말풍선, 보내기 버튼 */
+
+    --glass: rgba(255, 255, 255, 0.5);
+    --glass-strong: rgba(255, 255, 255, 0.72);
+    --glass-blur: blur(24px) saturate(190%);
+    /* 가장자리: 위쪽이 밝게 반짝이고 아래쪽은 아주 옅게 어두운 빛의 선 */
+    --glass-edge:
+        inset 0 0 0 1px rgba(255, 255, 255, 0.55),
+        inset 0 1.5px 1px rgba(255, 255, 255, 0.95),
+        inset 0 -1px 1px rgba(60, 70, 110, 0.06);
+    --glass-lift: 0 1px 2px rgba(40, 50, 90, 0.05), 0 10px 28px rgba(40, 50, 90, 0.08);
+
+    --radius-bubble: 22px;
+    --page-width: 760px;
+
+    --font-ui: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Apple SD Gothic Neo",
+        "Pretendard", "Noto Sans KR", "Malgun Gothic", system-ui, sans-serif;
+}
+
+/* Gradio 기본 변수를 우리 색으로 덮어씁니다 */
+.gradio-container {
+    --body-background-fill: transparent;
+    --background-fill-primary: transparent;
+    --background-fill-secondary: transparent;
+    --block-background-fill: transparent;
+    --block-border-width: 0px;
+    --block-shadow: none;
+    --input-background-fill: transparent;
+    --input-border-width: 0px;
+    --input-shadow: none;
+    --input-shadow-focus: none;
+    --body-text-color: var(--ink);
+    --body-text-color-subdued: var(--ink-soft);
+    --color-accent: var(--accent);
+    --font: var(--font-ui);
+    --font-mono: ui-monospace, SFMono-Regular, Menlo, monospace;
+    color-scheme: light;
+    font-family: var(--font-ui) !important;
+}
+
+/*배경*/
+html,
+body {
+    background-color: #f2f2f5 !important;
+    background-image:
+        radial-gradient(60vmax 60vmax at 8% 0%, rgba(255, 255, 255, 0.95), transparent 62%),
+        radial-gradient(55vmax 55vmax at 100% 18%, rgba(255, 255, 255, 0.7), transparent 62%),
+        radial-gradient(60vmax 60vmax at 90% 100%, rgba(200, 202, 212, 0.55), transparent 62%),
+        radial-gradient(50vmax 50vmax at 0% 96%, rgba(214, 216, 224, 0.5), transparent 62%) !important;
+    background-attachment: fixed !important;
+    min-height: 100dvh;
+}
+
+gradio-app,
+.gradio-container,
+.gradio-container .main,
+.gradio-container .wrap,
+.gradio-container .contain {
+    background: transparent !important;
+}
+
+/* 스크롤 동작은 유지하고 스크롤바만 숨깁니다 */
+* {
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+}
+
+*::-webkit-scrollbar {
+    display: none;
+}
+
+/*폭과 여백*/
+.gradio-container {
+    box-sizing: border-box;
+    width: 100%;
+    max-width: var(--page-width) !important;
+    margin: 0 auto !important;
+    padding: max(20px, env(safe-area-inset-top)) max(16px, env(safe-area-inset-right))
+        max(28px, env(safe-area-inset-bottom)) max(16px, env(safe-area-inset-left)) !important;
+}
+
+/* Gradio 기본 좌우 여백(32px)이 겹치지 않도록 줄입니다 */
+.gradio-container .main {
+    padding-left: 0 !important;
+    padding-right: 0 !important;
+}
+
+/* 아래쪽 "API 사용하기 · Gradio로 제작" 줄은 가립니다 */
+.gradio-container footer {
+    display: none !important;
+}
+
+/*제목: 아이폰의 큰 제목(Large Title) 느낌*/
+#app-header {
+    padding: 4px 6px 0;
+}
+
+#app-header h1 {
+    margin: 0 0 2px;
+    font-size: clamp(1.9rem, 8vw, 2.4rem);
+    font-weight: 700;
+    letter-spacing: -0.035em;
+    line-height: 1.1;
+    color: var(--ink);
+}
+
+#app-header p {
+    margin: 0;
+    font-size: 0.95rem;
+    color: var(--ink-soft);
+}
+
+/*탭: 바탕 없이 각각 떨어진 유리 칩. 선택된 탭만 색을 채웁니다*/
+.tabs {
+    margin-top: 14px;
+}
+
+.tab-wrapper {
+    border: 0 !important;
+    padding: 0 !important;
+    margin-bottom: 14px;
+    height: auto !important;
+    min-height: 44px;
+}
+
+.tab-container[role="tablist"] {
+    gap: 8px;
+    height: auto !important;
+    align-items: center;
+    padding: 2px 0;
+    background: transparent;
+    border: 0 !important;
+    box-shadow: none;
+}
+
+.tab-container[role="tablist"]::after {
+    display: none !important;
+}
+
+.tab-container button[role="tab"] {
+    min-height: 40px;
+    padding: 0 16px;
+    border: 0 !important;
+    border-radius: 999px !important;
+    background: var(--glass) !important;
+    color: var(--ink-soft) !important;
+    font-weight: 500;
+    font-size: 0.94rem;
+    box-shadow: var(--glass-edge);
+    -webkit-backdrop-filter: var(--glass-blur);
+    backdrop-filter: var(--glass-blur);
+    transition: background 0.25s ease, color 0.25s ease;
+}
+
+.tab-container button[role="tab"].selected {
+    background: var(--accent) !important;
+    color: #fff !important;
+    font-weight: 600;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.25);
+}
+
+.tab-container button[role="tab"]::after,
+.tab-container button[role="tab"].selected::after {
+    display: none !important;
+}
+
+/* 폭이 좁아 접힌 탭을 모아 두는 "…" 버튼과 목록 */
+.overflow-menu > button {
+    min-height: 48px;
+    min-width: 48px;
+    border: 0 !important;
+    border-radius: 999px !important;
+    background: var(--glass) !important;
+    box-shadow: var(--glass-edge), var(--glass-lift);
+    -webkit-backdrop-filter: var(--glass-blur);
+    backdrop-filter: var(--glass-blur);
+}
+
+.overflow-dropdown {
+    margin-top: 8px;
+    padding: 6px;
+    border: 0 !important;
+    border-radius: 22px !important;
+    background: var(--glass-strong) !important;
+    box-shadow: var(--glass-edge), var(--glass-lift) !important;
+    -webkit-backdrop-filter: var(--glass-blur);
+    backdrop-filter: var(--glass-blur);
+}
+
+.overflow-dropdown button {
+    border-radius: 16px !important;
+    min-height: 40px;
+}
+
+.tabitem {
+    border: 0 !important;
+    padding: 0 !important;
+    background: transparent !important;
+}
+
+/* 탭 안의 소개 문장 (말풍선 안의 글자에는 적용되지 않도록 소개 블록으로 한정합니다) */
+.tabitem .hide-container .prose {
+    padding-left: 6px;
+    color: var(--ink-soft);
+    font-size: 0.93rem;
+}
+
+/*대화: 판 없이 배경 위에 바로*/
+.tabitem .block.flex,
+.tabitem .bubble-wrap {
+    background: transparent !important;
+    border: 0 !important;
+    box-shadow: none !important;
+    border-radius: 0 !important;
+}
+
+.tabitem .bubble-wrap {
+    padding: 4px 2px;
+}
+
+/* 위쪽의 "Chatbot" 라벨과 지우기·공유 버튼은 가립니다 */
+.tabitem label[data-testid="block-label"],
+.tabitem .icon-button-wrapper.top-panel {
+    display: none !important;
+}
+
+.message-row {
+    padding: 3px 4px;
+}
+
+.message-content {
+    font-size: 1rem;
+    line-height: 1.5;
+    /* 한글이 단어 중간에서 끊기지 않고 띄어쓰기 단위로 줄바꿈되게 합니다.
+       (띄어쓰기 없는 아주 긴 글자는 anywhere 덕분에 칸을 넘지 않고 접힙니다.) */
+    word-break: keep-all;
+    overflow-wrap: anywhere;
+}
+
+
+.message-content .prose,
+.message-content span.md {
+    display: block !important;
+    padding: 0 !important;
+}
+
+.message-content p {
+    margin: 0 !important;
+}
+
+.message-content p + p {
+    margin-top: 0.6em !important;
+}
+
+/* 내 말풍선: 평평한 먹색 */
+.message.user,
+.user.message {
+    border: 0 !important;
+    border-radius: var(--radius-bubble) !important;
+    background: var(--accent) !important;
+    color: #fff !important;
+    box-shadow: none !important;
+}
+
+.user.message * {
+    color: #fff !important;
+}
+
+/* 답변 말풍선: 반투명 유리 */
+.message.bot,
+.bot.message {
+    border: 0 !important;
+    border-radius: var(--radius-bubble) !important;
+    background: var(--glass) !important;
+    -webkit-backdrop-filter: var(--glass-blur);
+    backdrop-filter: var(--glass-blur);
+    color: var(--ink) !important;
+    box-shadow: var(--glass-edge), 0 1px 2px rgba(40, 50, 90, 0.05) !important;
+}
+
+.bot.message .message-content,
+.bot.message .message-content * {
+    color: var(--ink) !important;
+}
+
+/* 대화가 없을 때 보이는 예시 질문 */
+.tabitem .examples,
+.tabitem .examples-holder {
+    background: transparent !important;
+}
+
+.tabitem button.example,
+.tabitem .examples button {
+    border: 0 !important;
+    border-radius: 22px !important;
+    background: var(--glass) !important;
+    color: var(--ink) !important;
+    box-shadow: var(--glass-edge), var(--glass-lift);
+    -webkit-backdrop-filter: var(--glass-blur);
+    backdrop-filter: var(--glass-blur);
+    transition: transform 0.15s ease;
+}
+
+.tabitem button.example:hover,
+.tabitem .examples button:hover {
+    transform: translateY(-1px);
+}
+
+/* 예시 질문 앞의 "Aa" 아이콘은 가립니다 */
+.tabitem .example-icon {
+    display: none !important;
+}
+
+/* 복사·다시 시도 같은 작은 버튼 */
+.icon-button {
+    border: 0 !important;
+    border-radius: 999px !important;
+    background: var(--glass) !important;
+    box-shadow: var(--glass-edge);
+}
+
+/* 입력창: 떠 있는 유리 알약 + 먹색 보내기 버튼 */
+/* 입력창을 감싸는 상자들을 투명하게 하고, 그림자가 잘리지 않도록 overflow 를 풉니다 */
+.tabitem .multimodal-textbox {
+    overflow: visible !important;
+}
+
+.tabitem .styler,
+.tabitem .gr-group,
+.tabitem .full-container,
+.tabitem .input-wrapper,
+.tabitem .input-row,
+.tabitem .textarea-wrapper,
+.tabitem label.show_textbox_border,
+.tabitem .input-container,
+.tabitem form,
+.tabitem .form {
+    overflow: visible !important;
+    background: transparent !important;
+    border: 0 !important;
+    box-shadow: none !important;
+    padding: 0 !important;
+}
+
+.tabitem .row {
+    flex-wrap: nowrap !important;
+    align-items: center;
+    gap: 8px !important;
+}
+
+.tabitem .row > * {
+    min-width: 0 !important;
+}
+
+.tabitem textarea,
+.tabitem input[type="text"] {
+    min-height: 52px;
+    padding: 14px 20px !important;
+    border: 0 !important;
+    border-radius: 26px !important;
+    background: var(--glass) !important;
+    color: var(--ink) !important;
+    font-size: 16px !important; /* 16px 미만이면 아이폰이 입력할 때 화면을 확대합니다 */
+    box-shadow: var(--glass-edge), var(--glass-lift) !important;
+}
+
+/* 보내기 버튼이 입력창 오른쪽 안에 얹히므로, 글자가 버튼 밑으로 들어가지 않게 비웁니다 */
+.tabitem .input-wrapper textarea {
+    padding-right: 64px !important;
+}
+
+.tabitem textarea:focus,
+.tabitem input[type="text"]:focus {
+    outline: none !important;
+    background: var(--glass-strong) !important;
+    box-shadow: var(--glass-edge), 0 0 0 3px rgba(29, 29, 31, 0.12), var(--glass-lift) !important;
+}
+
+.tabitem textarea::placeholder {
+    color: #8e8e93;
+}
+
+.tabitem button.submit-button,
+.tabitem button.primary {
+    min-width: 40px;
+    min-height: 40px;
+    border: 0 !important;
+    border-radius: 999px !important;
+    background: var(--accent) !important;
+    color: #fff !important;
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.18), 0 1px 3px rgba(0, 0, 0, 0.25);
+    transition: transform 0.12s ease;
+}
+
+.tabitem button.submit-button:active,
+.tabitem button.primary:active {
+    transform: scale(0.92);
+}
+
+.tabitem button.submit-button svg,
+.tabitem button.primary svg {
+    color: #fff !important;
+    fill: #fff !important;
+}
+
+/*작은 화면(아이폰 SE 등*/
+@media (max-width: 480px) {
+    .gradio-container {
+        padding-left: max(12px, env(safe-area-inset-left)) !important;
+        padding-right: max(12px, env(safe-area-inset-right)) !important;
+    }
+
+    :root {
+        --radius-bubble: 20px;
+    }
+
+    .tab-container button[role="tab"] {
+        padding: 0 12px;
+        font-size: 0.9rem;
+    }
+
+    .message-content {
+        font-size: 0.97rem;
+    }
+}
+
+/* 아주 큰 화면에서는 가운데에 좁게 모아 읽기 편하게 둡니다 */
+@media (min-width: 1100px) {
+    :root {
+        --page-width: 820px;
+    }
+}
+
+/*  움직임 줄이기 설정을 켠 사용자를 위해 */
+@media (prefers-reduced-motion: reduce) {
+    * {
+        transition: none !important;
+        animation: none !important;
+    }
+}
