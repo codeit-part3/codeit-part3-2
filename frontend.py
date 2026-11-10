@@ -16,6 +16,11 @@ APP_TITLE = "임시 제목"
 # 백엔드 서버 주소입니다. 로컬에서는 기본값을 쓰고, VM에서는 환경 변수 BACKEND_URL 로 바꿉니다.
 BACKEND_URL = os.getenv("BACKEND_URL", "http://127.0.0.1:8000")
 
+# 백엔드 응답을 기다리는 최대 시간(초)입니다. httpx 기본값(5초)은 LLM 답변에 너무 짧아 늘렸습니다.
+# 서버에 아예 연결이 안 될 때는 5초 안에 포기하고, 연결된 뒤 답변을 기다리는 시간만 길게 잡습니다.
+# 환경 변수 BACKEND_TIMEOUT 으로 바꿀 수 있습니다.
+BACKEND_TIMEOUT = httpx.Timeout(float(os.getenv("BACKEND_TIMEOUT", "60")), connect=5.0)
+
 # 화면 디자인(CSS)은 같은 폴더의 style.css 에 모아 두었습니다.
 CSS_PATH = Path(__file__).parent / "style.css"
 
@@ -49,7 +54,11 @@ def call_backend(engine_id: str, session_id: str, message: str) -> str:
         "message": message,
     }
     print(f"[URL]: {url}")
-    response = httpx.post(url=url, json=request_body).raise_for_status().json()
+    response = (
+        httpx.post(url=url, json=request_body, timeout=BACKEND_TIMEOUT)
+        .raise_for_status()
+        .json()
+    )
 
     return response["answer"]
 
@@ -78,6 +87,9 @@ def make_chat_fn(engine_id: str):
             return "질문을 입력해 주세요."
         try:
             return call_backend(engine_id, session_id, text)
+        except httpx.ReadTimeout:
+            # 서버에는 연결됐지만 답변이 늦어지는 경우입니다.
+            return "답변이 오래 걸리고 있습니다. 잠시 후 다시 시도해 주세요."
         except Exception as e:
             # 개발 중에는 터미널에서 원인을 확인할 수 있도록 출력합니다.
             print(f"[backend error] {e}")
