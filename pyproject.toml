@@ -8,5 +8,9 @@ dependencies = [
     "gradio>=6.31.0",
     "httpx>=0.28.1",
     "loguru>=0.7.3",
+    "olefile>=0.47",
+    "pyhwp>=0.1b15",
+    "pypdf>=7.0.0",
     "python-dotenv>=1.2.4",
+    "six>=1.17.0",
 ]
