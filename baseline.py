@@ -9,7 +9,7 @@ from pathlib import Path
 import pandas as pd
 from dotenv import load_dotenv
 from langchain.chat_models import init_chat_model
-from langchain.messages import HumanMessage, SystemMessage
+from langchain.messages import AIMessage, HumanMessage, SystemMessage
 from langchain_chroma import Chroma
 from langchain_core.documents import Document
 from langchain_ollama import OllamaEmbeddings
@@ -155,7 +155,31 @@ def build_vector_store():
 # =====================================================================
 # 3. 검색 + 답변
 # =====================================================================
-def answer_question(model, vector_store, question):
+def make_chat_model():
+    """답변 모델 생성"""
+    return init_chat_model(
+        CHAT_MODEL,
+        model_provider="ollama",
+        base_url=OLLAMA_URL,
+        temperature=TEMPERATURE,
+        seed=SEED,
+        num_ctx=NUM_CTX,
+    )
+
+
+def history_to_messages(history):
+    """앞 대화 기록(role/content 목록)을 LangChain 메시지로 변경"""
+    messages = []
+    for turn in history or []:
+        if turn["role"] == "user":
+            messages.append(HumanMessage(turn["content"]))
+        else:
+            messages.append(AIMessage(turn["content"]))
+    return messages
+
+
+def answer_question(model, vector_store, question, history=None):
+    # 검색은 질문만 사용하고, 앞 대화(history)는 모델에게만 전달
     # 작을수록 질문과 비슷
     retrieved = vector_store.similarity_search_with_score(question, k=TOP_K)
 
@@ -165,6 +189,7 @@ def answer_question(model, vector_store, question):
     )
     messages = [
         SystemMessage(SYSTEM_PROMPT),
+        *history_to_messages(history),
         HumanMessage(f"컨텍스트:\n{context}\n\n질문: {question}"),
     ]
     result = model.invoke(messages)
@@ -175,14 +200,7 @@ def answer_question(model, vector_store, question):
 # 4. 실행
 # =====================================================================
 def main():
-    model = init_chat_model(
-        CHAT_MODEL,
-        model_provider="ollama",
-        base_url=OLLAMA_URL,
-        temperature=TEMPERATURE,
-        seed=SEED,
-        num_ctx=NUM_CTX,
-    )
+    model = make_chat_model()
     vector_store = build_vector_store()
 
     rows = []
