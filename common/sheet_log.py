@@ -39,6 +39,15 @@ except ImportError:
 TIMEOUT = httpx.Timeout(30.0, connect=5.0)
 
 
+def _params_to_text(params) -> str:
+    """파라미터를 'chunk_size=500, top_k=5' 같은 문자열로 바꿉니다."""
+    if not params:
+        return ""
+    if isinstance(params, str):
+        return params
+    return ", ".join(f"{k}={v}" for k, v in params.items())
+
+
 def log_experiment(
     name: str,
     memo: str = "",
@@ -58,7 +67,7 @@ def log_experiment(
         "name": name,
         "memo": memo,
         **(metrics or {}),
-        "experiment": params or {},  # 이번에 바꾼 파라미터 (시트에는 문자열로 들어감)
+        "experiment": _params_to_text(params),  # 이번에 바꾼 파라미터 (문자열로 보냄)
         **(extra or {}),
     }
 
