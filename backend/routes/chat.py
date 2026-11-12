@@ -5,10 +5,6 @@ from loguru import logger
 
 from backend.schemas import ChatRequest, ChatResponse
 from backend.services.auth import compare_key
-from fastapi import APIRouter, HTTPException, status
-from loguru import logger
-
-from backend.schemas import ChatRequest, ChatResponse
 from backend.services.engine_loader import load_engine
 from backend.services.session_store import add_turn, load_history
 
