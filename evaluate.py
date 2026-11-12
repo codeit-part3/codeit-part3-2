@@ -1,11 +1,8 @@
 """골든셋 평가 스크립트
 
-실행 예
-  uv run python evaluate.py --limit 2      # 앞 2문항만 시험 삼아 실행
-  uv run python evaluate.py                # 전체 문항 실행
-  uv run python evaluate.py --version v2   # 결과 파일에 적을 버전 이름 변경
+변경사항
+- 골든셋 경로 : data/goldenset.json
 
-다른 엔진(v2 등)을 평가하려면 make_answer_fn() 만 변경하여 진행하세요~.
 """
 
 import argparse
@@ -16,6 +13,7 @@ from datetime import datetime
 from pathlib import Path
 
 import pandas as pd
+from langchain.messages import HumanMessage
 
 import baseline
 
@@ -41,6 +39,9 @@ DONT_KNOW = [
     "확인할 수 없",
     "내용이 없",
     "정보가 없",
+    "포함되어 있지 않",
+    "공개되어 있지 않",
+    "공개되지 않",
 ]
 # 금액을 지어냈는지 확인할 패턴 (쉼표가 있는 큰 숫자, 또는 숫자+원/만원/억)
 MONEY = r"\d{1,3}(?:,\d{3})+|\d+\s*(?:원|만원|천원|백만원|천만원|억)"
@@ -49,16 +50,32 @@ MONEY = r"\d{1,3}(?:,\d{3})+|\d+\s*(?:원|만원|천원|백만원|천만원|억)
 # =====================================================================
 # 1. 평가할 엔진 : 엔진 변환 시 이곳에서 진행
 # =====================================================================
-def make_answer_fn():
-    """answer_fn(question, history)"""
-    model = baseline.make_chat_model()
-    vector_store = baseline.build_vector_store()
+def make_answer_fn(engine):
+    """answer_fn(question, history) -> (답변 글자, [(조각, 거리), ...])"""
+    if engine == "v1":
+        model, vector_store = baseline.get_resources()
 
-    def answer_fn(question, history):
-        result, retrieved = baseline.answer_question(
-            model, vector_store, question, history
-        )
-        return result.text, retrieved
+        def answer_fn(question, history):
+            result, retrieved = baseline.answer_question(
+                model, vector_store, question, history
+            )
+            return result.text, retrieved
+
+    elif engine == "v2":
+        graph = baseline.get_graph()
+
+        def answer_fn(question, history):
+            state = graph.invoke({"question": question, "history": history or []})
+            return state["answer"], state["retrieved"]
+
+    else:  # agent
+        agent = baseline.make_agent()
+
+        def answer_fn(question, history):
+            baseline.TOOL_LOG.clear()
+            messages = [*baseline.history_to_messages(history), HumanMessage(question)]
+            result = agent.invoke({"messages": messages})
+            return result["messages"][-1].text, list(baseline.TOOL_LOG)
 
     return answer_fn
 
@@ -218,18 +235,22 @@ def summarize(df):
 def main():
     parser = argparse.ArgumentParser(description="골든셋으로 베이스라인을 평가합니다.")
     parser.add_argument(
-        "--golden", default=str(baseline.BASE_DIR / "data" / "golden_v0_20.json")
+        "--golden", default=str(baseline.BASE_DIR / "data" / "goldenset.json")
     )
     parser.add_argument("--limit", type=int, default=None, help="앞에서 N문항만 실행")
-    parser.add_argument("--version", default="v1", help="결과 파일에 적을 버전 이름")
+    parser.add_argument("--engine", default="v2", choices=["v1", "v2", "agent"])
+    parser.add_argument(
+        "--version", default=None, help="결과 파일 이름 (기본: 엔진 이름)"
+    )
     args = parser.parse_args()
+    args.version = args.version or args.engine
 
     golden = json.loads(Path(args.golden).read_text(encoding="utf-8-sig"))
     if args.limit:
         golden = golden[: args.limit]
     print(f"골든셋 {len(golden)}문항을 평가합니다.")
 
-    answer_fn = make_answer_fn()
+    answer_fn = make_answer_fn(args.engine)
     df = run_eval(golden, answer_fn, load_file_to_notice(), args.version)
     table = summarize(df)
 
