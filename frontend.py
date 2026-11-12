@@ -10,6 +10,10 @@ from pathlib import Path
 
 import gradio as gr
 import httpx
+from dotenv import get_key
+
+# 서버 접속용 API KEY입니다. Request객체의 header에 포함합니다.
+X_API_KEY = get_key(dotenv_path=".env", key_to_get="X_API_KEY")
 
 APP_TITLE = "임시 제목"
 
@@ -48,14 +52,17 @@ ENGINES = [
 def call_backend(engine_id: str, session_id: str, message: str) -> str:
     """백엔드 /chat 을 호출하고 응답의 answer 문자열을 돌려줍니다."""
     url = f"{BACKEND_URL}/chat/"
+    headers = {
+        "X-API-KEY": X_API_KEY
+    }  # HTTP 헤더는 _를 -로 변환해서 읽기 때문에, 연결문자로 -를 사용했습니다.
     request_body = {
         "engine_id": engine_id,
         "session_id": session_id,
         "message": message,
     }
-    print(f"[URL]: {url}")
+
     response = (
-        httpx.post(url=url, json=request_body, timeout=BACKEND_TIMEOUT)
+        httpx.post(url=url, headers=headers, json=request_body, timeout=BACKEND_TIMEOUT)
         .raise_for_status()
         .json()
     )
@@ -87,6 +94,12 @@ def make_chat_fn(engine_id: str):
             return "질문을 입력해 주세요."
         try:
             return call_backend(engine_id, session_id, text)
+        except httpx.HTTPStatusError as e:
+            # 백엔드에서 에러가 발생한 경우입니다(엔진 로딩, API Key 인증 등).
+            resp = e.response.json()
+            detail = resp["detail"]
+            print(f"[backend error] {e.response.status_code}")
+            return detail
         except httpx.ReadTimeout:
             # 서버에는 연결됐지만 답변이 늦어지는 경우입니다.
             return "답변이 오래 걸리고 있습니다. 잠시 후 다시 시도해 주세요."
