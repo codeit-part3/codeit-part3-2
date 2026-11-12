@@ -17,8 +17,12 @@ X_API_KEY = get_key(dotenv_path=".env", key_to_get="X_API_KEY")
 
 APP_TITLE = "임시 제목"
 
-# 백엔드 서버 주소입니다. 로컬에서는 기본값을 쓰고, VM에서는 환경 변수 BACKEND_URL 로 바꿉니다.
+# 로컬 백엔드 서버 주소입니다.
 BACKEND_URL = os.getenv("BACKEND_URL", "http://127.0.0.1:8000")
+
+# VM 서버 연결 시 사용할 URL입니다.
+# BACKEND_URL = os.getenv("BACKEND_URL", "http://136.111.105.21:8000")
+
 
 # 백엔드 응답을 기다리는 최대 시간(초)입니다. httpx 기본값(5초)은 LLM 답변에 너무 짧아 늘렸습니다.
 # 서버에 아예 연결이 안 될 때는 5초 안에 포기하고, 연결된 뒤 답변을 기다리는 시간만 길게 잡습니다.
