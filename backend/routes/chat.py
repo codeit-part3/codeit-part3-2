@@ -1,12 +1,14 @@
 # backend/routes/chat.py
-from fastapi import APIRouter, HTTPException, status
+
+from fastapi import APIRouter, Depends, HTTPException, status
 from loguru import logger
 
 from backend.schemas import ChatRequest, ChatResponse
+from backend.services.auth import compare_key
 from backend.services.engine_loader import load_engine
 from backend.services.session_store import add_turn, load_history
 
-router = APIRouter(prefix="/chat", tags=["chat"])
+router = APIRouter(prefix="/chat", tags=["chat"], dependencies=[Depends(compare_key)])
 
 
 @router.post("/", response_model=ChatResponse)
