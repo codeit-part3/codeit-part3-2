@@ -1,7 +1,7 @@
 """청킹 설정별 임베딩 검색 성능을 비교합니다.
 
 실행:
-  uv run --no-sync python -m ai.rahui.embed_compare --models gemma
+  uv run --no-sync python -m ai.rahui.experiments.embed_compare --models gemma
 
 입력: data/<CLEAN_DIR>/, ai/rahui/rahui_golden_set.json
 출력: data/embed_cache/, ai/rahui/eda_results/<실행 폴더>/
@@ -19,8 +19,8 @@ from datetime import datetime
 
 import numpy as np
 
-from ai.rahui import chunk_compare as cc
-from ai.rahui.convert import DATA
+from ai.rahui.conversion.convert import DATA
+from ai.rahui.experiments import chunk_compare as cc
 
 CACHE = DATA / "embed_cache"
 MODELS = {
@@ -169,6 +169,8 @@ def evaluate(
 ) -> tuple[dict, list[dict]]:
     """ranker(q_index, query) -> 상위 10개 청크 번호. chunk_compare.run_config 와 같은 지표."""
     hit = {k: 0 for k in cc.KS}
+    full = {k: 0 for k in cc.KS}
+    cov = {k: 0.0 for k in cc.KS}
     rr, per_q = 0.0, []
     for qi, q in enumerate(qs):
         top = ranker(qi, q["query"])
@@ -181,8 +183,11 @@ def evaluate(
             ),
             None,
         )
+        pr = cc.piece_ranks(top, chunks, q)
         for k in cc.KS:
             hit[k] += bool(ev and ev <= k)
+            full[k] += all(r and r <= k for r in pr)
+            cov[k] += sum(1 for r in pr if r and r <= k) / len(pr)
         rr += 1 / ev if ev else 0
         per_q.append(
             {
@@ -191,12 +196,15 @@ def evaluate(
                 "level": q["level"],
                 "근거_순위": ev or "",
                 "문서_순위": "",
+                **cc.strict_fields(pr),
             }
         )
     n = len(qs)
     return {
         "설정": label,
         **{f"근거@{k}": round(hit[k] / n, 3) for k in cc.KS},
+        **{f"완전근거@{k}": round(full[k] / n, 3) for k in cc.KS},
+        **{f"조각커버@{k}": round(cov[k] / n, 3) for k in cc.KS},
         "MRR@10": round(rr / n, 3),
     }, per_q
 
@@ -212,10 +220,10 @@ def run_info(a, models, cfgs, devices, n_docs, n_qs, skipped, seconds) -> list[s
     """이 실행을 다시 재현하는 데 필요한 조건을 적는다 (결과 폴더의 run_info.txt)."""
     from pathlib import Path
 
-    here = Path(__file__).resolve().parent
     out = [
         f"실행 시각: {datetime.now():%Y-%m-%d %H:%M:%S} (걸린 시간 {seconds:.0f}초)",
-        "실행 명령: python -m ai.rahui.embed_compare " + " ".join(sys.argv[1:]),
+        "실행 명령: python -m ai.rahui.experiments.embed_compare "
+        + " ".join(sys.argv[1:]),
         "모델: "
         + ", ".join(
             m + " (" + (MODELS[m].get("api") or MODELS[m]["hf"] or "hash") + ")"
@@ -229,8 +237,8 @@ def run_info(a, models, cfgs, devices, n_docs, n_qs, skipped, seconds) -> list[s
         f"문서 {n_docs}건, 평가 문항 {n_qs}개, 제외 {len(skipped)}개 ({', '.join(s.split()[0] for s in skipped) or '없음'})",
         f"CLEAN 폴더: {cc.CLEAN}",
         f"골든셋 md5: {_md5(cc.GOLDEN)} ({cc.GOLDEN.name})",
-        f"embed_compare.py md5: {_md5(here / 'embed_compare.py')}",
-        f"chunk_compare.py md5: {_md5(here / 'chunk_compare.py')}",
+        f"embed_compare.py md5: {_md5(Path(__file__))}",
+        f"chunk_compare.py md5: {_md5(Path(cc.__file__))}",
         f"python {platform.python_version()} / {platform.platform()}",
     ]
     for pkg in ("torch", "sentence_transformers", "transformers", "numpy"):
@@ -392,6 +400,7 @@ def main() -> None:
             seen.add(pr)
             uniq.append(pr)
     cc.PAIRS = uniq
+    lines += [""] + cc.strict_block(rows, perq, qs, names)
     lines += [""] + cc.bootstrap(perq, qs, names)
     lines += [
         "",
@@ -400,14 +409,21 @@ def main() -> None:
     tag = "" if cc.CLEAN.name == "clean" else f"_{cc.CLEAN.name}"
     run = cc.RESULTS / f"{datetime.now():%Y%m%d_%H%M%S}_임베딩비교{tag}"
     run.mkdir(parents=True, exist_ok=True)
-    cols = ["설정"] + [f"근거@{k}" for k in cc.KS] + ["MRR@10"]
+    cols = (
+        ["설정"]
+        + [f"근거@{k}" for k in cc.KS]
+        + [f"완전근거@{k}" for k in cc.KS]
+        + [f"조각커버@{k}" for k in cc.KS]
+        + ["MRR@10"]
+    )
     with open(run / "results.csv", "w", encoding="utf-8-sig", newline="") as f:
         w = csv.DictWriter(f, fieldnames=cols)
         w.writeheader()
         w.writerows(rows)
     with open(run / "per_question.csv", "w", encoding="utf-8-sig", newline="") as f:
         w = csv.DictWriter(
-            f, fieldnames=["config", "id", "level", "근거_순위", "문서_순위"]
+            f,
+            fieldnames=["config", "id", "level", "근거_순위", "문서_순위", "조각순위"],
         )
         w.writeheader()
         w.writerows(perq)

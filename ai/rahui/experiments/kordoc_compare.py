@@ -1,9 +1,9 @@
 """kordoc 변환본과 기존 변환본을 문서별로 비교합니다.
 
 실행:
-  uv run python -m ai.rahui.kordoc_compare
-  uv run python -m ai.rahui.kordoc_compare --limit 5
-  uv run python -m ai.rahui.kordoc_compare --make-mixed
+  uv run python -m ai.rahui.experiments.kordoc_compare
+  uv run python -m ai.rahui.experiments.kordoc_compare --limit 5
+  uv run python -m ai.rahui.experiments.kordoc_compare --make-mixed
 
 입력: data/processed/, data/processed_kordoc_raw/, data/processed_kordoc/, data/clean_hybrid/, data/clean_kordoc/
 출력: ai/rahui/eda_results/<실행 폴더>/ (results_by_doc.csv, summary.txt)
@@ -16,8 +16,8 @@ import statistics as st
 from datetime import datetime
 from pathlib import Path
 
-from ai.rahui import chunk_compare as cc
-from ai.rahui.convert import DATA, read_rows
+from ai.rahui.conversion.convert import DATA, read_rows
+from ai.rahui.experiments import chunk_compare as cc
 
 OLD, RAW, NEW = "processed", "processed_kordoc_raw", "processed_kordoc"
 SH = 12  # 내용 일치를 볼 조각 길이(글자)
@@ -221,7 +221,7 @@ def main() -> None:
                 src.read_text(encoding="utf-8"), encoding="utf-8", newline="\n"
             )
         print(
-            f"\n혼합 말뭉치 저장: {mixed} (HWP=기존, PDF=kordoc). 이어서: python -m ai.rahui.preprocess --src processed_mixed --out clean_mixed"
+            f"\n혼합 말뭉치 저장: {mixed} (HWP=기존, PDF=kordoc). 이어서: python -m ai.rahui.preprocessing.preprocess --src processed_mixed --out clean_mixed"
         )
 
 

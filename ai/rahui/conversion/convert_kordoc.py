@@ -1,14 +1,14 @@
 """kordoc으로 HWP/PDF를 Markdown 텍스트로 변환합니다.
 
 실행:
-  uv run python -m ai.rahui.convert_kordoc
-  uv run python -m ai.rahui.convert_kordoc --limit 3
-  uv run python -m ai.rahui.convert_kordoc --ocr
+  uv run python -m ai.rahui.conversion.convert_kordoc
+  uv run python -m ai.rahui.conversion.convert_kordoc --limit 3
+  uv run python -m ai.rahui.conversion.convert_kordoc --ocr
 
 입력: data/files/
 출력: data/kordoc_work/, data/processed_kordoc_raw/, data/processed_kordoc/
 후처리:
-  uv run python -m ai.rahui.preprocess --src processed_kordoc --out clean_kordoc
+  uv run python -m ai.rahui.preprocessing.preprocess --src processed_kordoc --out clean_kordoc
 """
 
 import argparse
@@ -21,7 +21,7 @@ import sys
 import time
 from pathlib import Path
 
-from ai.rahui.convert import DATA, FILES, read_rows
+from ai.rahui.conversion.convert import DATA, FILES, read_rows
 
 KORDOC = "kordoc@4.24.66"  # 결과를 다시 만들 수 있도록 버전을 고정 (2026-11-12 에 시험한 버전)
 

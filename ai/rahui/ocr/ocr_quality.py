@@ -1,8 +1,8 @@
 """OCR 블록 품질을 확인하고 필요하면 낮은 품질 블록을 제외합니다.
 
 실행:
-  uv run --no-sync python -m ai.rahui.ocr_quality
-  uv run --no-sync python -m ai.rahui.ocr_quality --apply --out processed_mixed_ocr_clean
+  uv run --no-sync python -m ai.rahui.ocr.ocr_quality
+  uv run --no-sync python -m ai.rahui.ocr.ocr_quality --apply --out processed_mixed_ocr_clean
 
 입력: data/<src>/, data/kordoc_work/ocr/_ocr_log.csv
 출력: data/kordoc_work/ocr/_quality.csv, _quality_preview.txt, (apply) data/<out>/
@@ -15,7 +15,7 @@ import re
 from collections import Counter
 from pathlib import Path
 
-from ai.rahui.convert import DATA
+from ai.rahui.conversion.convert import DATA
 
 HEAD = "[이미지 OCR]"
 BLOCK = re.compile(r"^### (image_\d+\.\w+)[ \t]*$", re.M)

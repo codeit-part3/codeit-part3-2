@@ -1,8 +1,8 @@
 """변환된 RFP 문서의 통계와 그래프를 만듭니다.
 
 실행:
-  uv run python -m ai.rahui.eda_stats
-  uv run python -m ai.rahui.eda_stats --deep --name 청킹_표
+  uv run python -m ai.rahui.analysis.eda_stats
+  uv run python -m ai.rahui.analysis.eda_stats --deep --name 청킹_표
 
 입력: data/data_list.csv, data/processed/*.txt
 출력: ai/rahui/eda_results/<실행 폴더>/ (report.html, summary.txt, doc_stats.csv)
@@ -19,9 +19,10 @@ from collections import Counter
 from datetime import datetime
 from pathlib import Path
 
-from ai.rahui.convert import DATA, OUT, nonspace_len, read_rows
+from ai.rahui.conversion.convert import DATA, OUT, nonspace_len, read_rows
+from ai.rahui.paths import RAHUI_DIR, RESULTS_DIR
 
-RESULTS = Path(__file__).resolve().parent / "eda_results"
+RESULTS = RESULTS_DIR
 
 # 공통으로 나올 만한 항목. 문서마다 표현이 달라 정규식으로 느슨하게 찾습니다.
 SECTIONS = {
@@ -995,9 +996,7 @@ def write_doc_index(docs_ok: list[dict]) -> None:
         loc.append(
             f"| {d['no']} | {d['ext']} | {d['org']} | {d['row']['사업명']} | {d['row']['파일명']} | {flags} |"
         )
-    (Path(__file__).resolve().parent / "문서번호표.md").write_text(
-        "\n".join(pub) + "\n", encoding="utf-8"
-    )
+    (RAHUI_DIR / "문서번호표.md").write_text("\n".join(pub) + "\n", encoding="utf-8")
     (DATA / "문서번호표_전체.md").write_text("\n".join(loc) + "\n", encoding="utf-8")
 
 

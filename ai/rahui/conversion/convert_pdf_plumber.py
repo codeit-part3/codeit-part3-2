@@ -1,6 +1,6 @@
 """pdfplumber로 PDF의 표와 본문을 텍스트로 변환합니다.
 
-실행: python ai/rahui/convert_pdf_plumber.py <입력.pdf> <출력.txt>
+실행: python -m ai.rahui.conversion.convert_pdf_plumber <입력.pdf> <출력.txt>
 입력: PDF 파일
 출력: 지정한 TXT 파일
 """

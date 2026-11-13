@@ -1,6 +1,6 @@
 """골든셋을 점검하고 답변 결과를 채점합니다.
 
-실행: uv run python -m ai.rahui.golden_eval
+실행: uv run python -m ai.rahui.evaluation.golden_eval
 입력: ai/rahui/rahui_golden_set.json
 출력: 터미널 요약
 """
@@ -11,7 +11,9 @@ from collections import Counter
 from pathlib import Path
 from typing import NamedTuple
 
-GOLDEN_PATH = Path(__file__).resolve().parent / "rahui_golden_set.json"
+from ai.rahui.paths import GOLDEN_SET_PATH
+
+GOLDEN_PATH = GOLDEN_SET_PATH
 REFUSAL = (
     "잘 모르",
     "알 수 없",
@@ -221,7 +223,7 @@ def main() -> None:
         print("  -", p)
 
     try:  # 원본 파일이 있으면 파일명이 실제로 있는지도 확인
-        from ai.rahui.convert import FILES
+        from ai.rahui.conversion.convert import FILES
     except ImportError:
         return
     missing = [

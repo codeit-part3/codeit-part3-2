@@ -1,8 +1,8 @@
 """변환된 TXT를 정리하고 문서 메타데이터를 만듭니다.
 
 실행:
-  uv run python -m ai.rahui.preprocess
-  uv run python -m ai.rahui.preprocess --src processed_kordoc --out clean_kordoc
+  uv run python -m ai.rahui.preprocessing.preprocess
+  uv run python -m ai.rahui.preprocessing.preprocess --src processed_kordoc --out clean_kordoc
 
 입력: data/<src>/*.txt (기본 processed)
 출력: data/<out>/*.txt, data/<out>/_meta.csv
@@ -15,7 +15,7 @@ import re
 import sys
 from pathlib import Path
 
-from ai.rahui.convert import DATA, read_rows
+from ai.rahui.conversion.convert import DATA, read_rows
 
 LONG_LINE = 3000  # 이 길이를 넘는 줄만 나눔
 PIECE = 1000  # 나눈 조각의 최대 길이

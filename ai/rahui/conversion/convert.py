@@ -7,9 +7,9 @@
     uv add pypdf pyhwp six olefile
 
 실행 (프로젝트 루트에서):
-    uv run python -m ai.rahui.convert              # 샘플 9건 (짧은/중간/긴 각 3건)
-    uv run python -m ai.rahui.convert --per-group 2  # 그룹별 2건
-    uv run python -m ai.rahui.convert --all        # 전체 100건
+    uv run python -m ai.rahui.conversion.convert              # 샘플 9건 (짧은/중간/긴 각 3건)
+    uv run python -m ai.rahui.conversion.convert --per-group 2  # 그룹별 2건
+    uv run python -m ai.rahui.conversion.convert --all        # 전체 100건
 
 출력:
     data/processed/<파일명>.txt        변환된 텍스트
@@ -24,10 +24,11 @@ import sys
 import time
 from pathlib import Path
 
-from ai.rahui.hwp_olefile import convert_hwp_olefile, coverage
+from ai.rahui.conversion.hwp_olefile import convert_hwp_olefile, coverage
+from ai.rahui.paths import DATA_DIR, PROJECT_ROOT
 
-ROOT = Path(__file__).resolve().parents[2]
-DATA = ROOT / "data"
+ROOT = PROJECT_ROOT
+DATA = DATA_DIR
 FILES = DATA / "files"
 OUT = DATA / "processed"
 CSV_PATH = DATA / "data_list.csv"
@@ -157,7 +158,7 @@ def convert_hwp_pyhwp(path: Path) -> str:
                 return text
         except Exception as e:  # noqa: BLE001
             print(f"        (hwp5txt 실패 -> olefile 로 대신: {e})", flush=True)
-    from ai.rahui.hwp_olefile import convert_hwp_olefile
+    from ai.rahui.conversion.hwp_olefile import convert_hwp_olefile
 
     return convert_hwp_olefile(path)
 

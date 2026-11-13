@@ -1,8 +1,8 @@
 """청킹 설정별 검색 성능을 비교합니다.
 
 실행:
-  uv run python -m ai.rahui.chunk_compare
-  uv run python -m ai.rahui.chunk_compare --only F1000,S1000,S1000M
+  uv run python -m ai.rahui.experiments.chunk_compare
+  uv run python -m ai.rahui.experiments.chunk_compare --only F1000,S1000,S1000M
 
 입력: data/<CLEAN_DIR>/, ai/rahui/rahui_golden_set.json
 출력: ai/rahui/eda_results/<실행 폴더>/ (results.csv, per_question.csv, summary.txt)
@@ -23,13 +23,13 @@ from collections import Counter, defaultdict
 from datetime import datetime
 from pathlib import Path
 
-from ai.rahui.convert import DATA
-from ai.rahui.eda_stats import _MARK, heading_cell
+from ai.rahui.analysis.eda_stats import _MARK, heading_cell
+from ai.rahui.conversion.convert import DATA
+from ai.rahui.paths import GOLDEN_SET_PATH, RESULTS_DIR
 
-HERE = Path(__file__).resolve().parent
 CLEAN = DATA / os.environ.get("CLEAN_DIR", "clean")
-GOLDEN = HERE / "rahui_golden_set.json"
-RESULTS = HERE / "eda_results"
+GOLDEN = Path(os.environ.get("GOLDEN_PATH") or GOLDEN_SET_PATH)  # 기본은 v1
+RESULTS = RESULTS_DIR
 KS = (1, 3, 5, 10)
 ANY = re.compile(r".")
 NORM = re.compile(r"[^0-9A-Za-z가-힣]")
@@ -45,6 +45,16 @@ CONFIGS = {
     "S1000": ("struct", 1000, False),
     "S1500": ("struct", 1500, False),
     "S1000M": ("struct", 1000, True),
+    "S1500M": ("struct", 1500, True),  # 기준선 (embed_compare와 같은 이름)
+    # dh 방식 요구사항 단위 청킹 (req_chunk.py). R: 나머지 본문도 dh 일반 청킹, RS: 나머지 본문은 우리 구조 청킹
+    "R1000M": ("req", 1000, True),
+    "RS1500M": ("reqstruct", 1500, True),
+    # 전처리 개선 (prep_index.py): T 표 문장화, B 절 제목 경로, C 반복 줄 제거
+    "S1500MT": ("sx:T", 1500, True),
+    "S1500MB": ("sx:B", 1500, True),
+    "S1500MC": ("sx:C", 1500, True),
+    "S1500MTB": ("sx:TB", 1500, True),
+    "S1500MTBC": ("sx:TBC", 1500, True),
 }
 
 
@@ -147,11 +157,36 @@ def chunk_struct(text: str, target: int) -> list[tuple[str, str]]:
 def build_chunks(docs: dict[int, dict], kind: str, size: int, meta: bool) -> list[dict]:
     chunks = []
     for no, d in docs.items():
-        parts = (
-            chunk_fixed(d["text"], size)
-            if kind == "fixed"
-            else chunk_struct(d["text"], size)
-        )
+        if kind.startswith("sx:"):
+            from ai.rahui.preprocessing.prep_index import chunk_x
+
+            for sec, body, ibody in chunk_x(d["text"], size, kind[3:]):
+                head = (
+                    f"[{d['org']} | {d['title']}" + (f" | {sec}" if sec else "") + "]\n"
+                    if meta
+                    else ""
+                )
+                chunks.append(
+                    {
+                        "doc": no,
+                        "body": body,
+                        "nbody": norm(body),
+                        "index": head + ibody,
+                    }
+                )
+            continue
+        if kind in ("req", "reqstruct"):
+            from ai.rahui.preprocessing.req_chunk import chunk_req
+
+            parts = chunk_req(
+                d["text"], "struct" if kind == "reqstruct" else "general", size
+            )
+        else:
+            parts = (
+                chunk_fixed(d["text"], size)
+                if kind == "fixed"
+                else chunk_struct(d["text"], size)
+            )
         for sec, body in parts:
             head = (
                 f"[{d['org']} | {d['title']}" + (f" | {sec}" if sec else "") + "]\n"
@@ -329,6 +364,75 @@ def bootstrap(
 
 
 # ---------------------------------------------------------------- 실험
+
+
+def piece_ranks(top: list[int], chunks: list[dict], q: dict) -> list:
+    """근거 인용 조각마다, 근거 문서의 청크 중 그 조각이 든 청크가 처음 나온 순위 (없으면 None)."""
+    return [
+        next(
+            (
+                i + 1
+                for i, cid in enumerate(top)
+                if chunks[cid]["doc"] in q["docs"] and k in chunks[cid]["nbody"]
+            ),
+            None,
+        )
+        for k in q["key"]
+    ]
+
+
+def strict_fields(pr: list) -> dict:
+    """per_question.csv 에 남길 조각별 순위 (나중에 기준을 바꿔도 다시 돌리지 않게)."""
+    return {"조각순위": ";".join(str(r) if r else "" for r in pr)}
+
+
+def _flags(p: dict, k: int) -> tuple[float, float]:
+    """(완전근거@k, 조각커버@k): 모든 조각이 상위 k 안에 있으면 1 / 찾은 조각 비율."""
+    rs = [int(x) if x != "" else None for x in str(p["조각순위"]).split(";")]
+    ok = [1 if r and r <= k else 0 for r in rs]
+    return float(all(ok)), sum(ok) / len(ok)
+
+
+def strict_block(
+    rows: list[dict], perq: list[dict], qs: list[dict], names: list[str]
+) -> list[str]:
+    """엄격 지표 요약 + 완전근거@5 의 95% 구간(문서 묶음 부트스트랩 5000회, 시드 0)."""
+    ids = [q["id"] for q in qs]
+    by = {(p["config"], p["id"]): p for p in perq}
+    cl = defaultdict(list)
+    for ix, q in enumerate(qs):
+        cl[q["cluster"]].append(ix)
+    groups = list(cl.values())
+    rng = random.Random(0)
+    reps = [
+        [ix for g in (rng.choice(groups) for _ in groups) for ix in g]
+        for _ in range(5000)
+    ]
+    out = [
+        "엄격 지표 (같은 청크·같은 검색 결과를 더 까다롭게 채점)",
+        "  완전근거@k = 근거 인용 조각을 하나도 빠짐없이 상위 k개 안에서 찾은 문항 비율 (조각이 여러 개인 문항은 전부 필요)",
+        "  조각커버@k = 문항별로 찾은 조각의 비율을 평균낸 값 (부분 점수)",
+        "  근거@k(기존) = 조각 하나만 찾아도 적중. 값이 같으면 모든 문항이 조각 하나로 판정된다는 뜻",
+        "",
+        f"{'설정':<26}{'근거@5':>8}{'완전@5':>8}{'95% 구간':>16}{'완전@10':>9}{'조각커버@5':>11}{'조각커버@10':>12}",
+    ]
+    base = {r["설정"]: r for r in rows}
+    for nm in names:
+        f5 = [_flags(by[(nm, i)], 5)[0] for i in ids]
+        f10 = [_flags(by[(nm, i)], 10)[0] for i in ids]
+        c5 = [_flags(by[(nm, i)], 5)[1] for i in ids]
+        c10 = [_flags(by[(nm, i)], 10)[1] for i in ids]
+        v = sorted(sum(f5[i] for i in ix) / len(ix) for ix in reps)
+        lo, hi = v[int(0.025 * len(v))], v[int(0.975 * len(v)) - 1]
+        n = len(ids)
+        out.append(
+            f"{nm:<26}{base[nm]['근거@5']:>8.2f}{sum(f5) / n:>8.2f}{f'[{lo:.2f}, {hi:.2f}]':>16}{sum(f10) / n:>9.2f}{sum(c5) / n:>11.2f}{sum(c10) / n:>12.2f}"
+        )
+    multi = [q["id"] for q in qs if len(q["key"]) > 1]
+    out += ["", f"조각이 2개 이상인 문항 {len(multi)}개: " + ", ".join(multi)]
+    return out
+
+
 def run_config(
     name: str, docs: dict[int, dict], qs: list[dict]
 ) -> tuple[dict, list[dict]]:
@@ -340,6 +444,8 @@ def run_config(
     lens = [len(c["body"]) for c in chunks]
     per_q, hit = [], {k: 0 for k in KS}
     dhit = {k: 0 for k in KS}
+    full = {k: 0 for k in KS}
+    cov = {k: 0.0 for k in KS}
     rr = 0.0
     for q in qs:
         top = bm.top(q["query"], max(KS))
@@ -356,9 +462,12 @@ def run_config(
             (i + 1 for i, cid in enumerate(top) if chunks[cid]["doc"] in q["docs"]),
             None,
         )
+        pr = piece_ranks(top, chunks, q)
         for k in KS:
             hit[k] += bool(ev_rank and ev_rank <= k)
             dhit[k] += bool(dc_rank and dc_rank <= k)
+            full[k] += all(r and r <= k for r in pr)
+            cov[k] += sum(1 for r in pr if r and r <= k) / len(pr)
         rr += 1 / ev_rank if ev_rank else 0
         per_q.append(
             {
@@ -367,12 +476,18 @@ def run_config(
                 "level": q["level"],
                 "근거_순위": ev_rank or "",
                 "문서_순위": dc_rank or "",
+                **strict_fields(pr),
             }
         )
     n = len(qs)
     row = {
         "설정": name,
-        "방식": {"fixed": "글자 수", "struct": "제목·표 구조"}[kind],
+        "방식": {
+            "fixed": "글자 수",
+            "struct": "제목·표 구조",
+            "req": "요구사항(dh)",
+            "reqstruct": "요구사항+구조",
+        }.get(kind, "구조+전처리" if kind.startswith("sx:") else kind),
         "크기": size,
         "메타": "O" if meta else "",
         "청크수": len(chunks),
@@ -380,6 +495,8 @@ def run_config(
         "청크길이_최대": max(lens),
         **{f"근거@{k}": round(hit[k] / n, 3) for k in KS},
         **{f"문서@{k}": round(dhit[k] / n, 3) for k in KS},
+        **{f"완전근거@{k}": round(full[k] / n, 3) for k in KS},
+        **{f"조각커버@{k}": round(cov[k] / n, 3) for k in KS},
         "MRR@10": round(rr / n, 3),
         "소요(초)": round(build_s, 1),
     }
@@ -409,6 +526,8 @@ def main() -> None:
         ["설정", "방식", "크기", "메타", "청크수", "청크길이_중앙값", "청크길이_최대"]
         + [f"근거@{k}" for k in KS]
         + [f"문서@{k}" for k in KS]
+        + [f"완전근거@{k}" for k in KS]
+        + [f"조각커버@{k}" for k in KS]
         + ["MRR@10", "소요(초)"]
     )
     head = (
@@ -443,6 +562,7 @@ def main() -> None:
                 f"{sum(1 for p in rs if p['근거_순위'] != '' and p['근거_순위'] <= 5) / max(1, len(rs)):>16.2f}"
             )
         lines.append(f"{nm:<8}" + "".join(cells))
+    lines += [""] + strict_block(rows, perq, qs, names)
     lines += [""] + bootstrap(perq, qs, names)
     tag = "" if CLEAN.name == "clean" else f"_{CLEAN.name}"
     run = RESULTS / f"{datetime.now():%Y%m%d_%H%M%S}_청킹비교{tag}"
@@ -453,7 +573,8 @@ def main() -> None:
         w.writerows(rows)
     with open(run / "per_question.csv", "w", encoding="utf-8-sig", newline="") as f:
         w = csv.DictWriter(
-            f, fieldnames=["config", "id", "level", "근거_순위", "문서_순위"]
+            f,
+            fieldnames=["config", "id", "level", "근거_순위", "문서_순위", "조각순위"],
         )
         w.writeheader()
         w.writerows(perq)

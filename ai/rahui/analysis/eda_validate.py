@@ -1,8 +1,8 @@
 """문서 제목 추출 규칙을 표본으로 검증합니다.
 
 실행:
-  uv run python -m ai.rahui.eda_validate
-  uv run python -m ai.rahui.eda_validate --score
+  uv run python -m ai.rahui.analysis.eda_validate
+  uv run python -m ai.rahui.analysis.eda_validate --score
 
 입력: data/processed/*.txt, 채점 시트(--score 실행 시)
 출력: ai/rahui/eda_results/의 검증 폴더
@@ -16,15 +16,16 @@ import statistics as st
 from datetime import datetime
 from pathlib import Path
 
-from ai.rahui.eda_stats import (
+from ai.rahui.analysis.eda_stats import (
     PAGE_NO,
     SECTIONS,
     heading_cell,
     load_docs,
     strict_heading,
 )
+from ai.rahui.paths import RESULTS_DIR
 
-OUT_ROOT = Path(__file__).resolve().parent / "eda_results"
+OUT_ROOT = RESULTS_DIR
 FORCE = [65, 93]  # 앞쪽 가짜 일치가 알려진 문서는 항상 포함
 
 
@@ -181,7 +182,7 @@ def main() -> None:
     print(
         "  - 실제_있음: 문서에 그 항목 절이 실제로 있으면 O, 없으면 X (판정 줄이 (없음)이어도 반드시 기입)"
     )
-    print("다 채운 뒤: uv run python -m ai.rahui.eda_validate --score")
+    print("다 채운 뒤: uv run python -m ai.rahui.analysis.eda_validate --score")
 
 
 def score(run: Path) -> None:

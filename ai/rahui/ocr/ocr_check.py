@@ -1,8 +1,8 @@
 """OCR 전후 텍스트에서 이미지 의존 문항의 근거를 확인합니다.
 
 실행:
-  uv run python -m ai.rahui.ocr_check processed_kordoc processed_kordoc_ocr
-  uv run python -m ai.rahui.ocr_check processed_kordoc --extra kordoc_work/ocr
+  uv run python -m ai.rahui.ocr.ocr_check processed_kordoc processed_kordoc_ocr
+  uv run python -m ai.rahui.ocr.ocr_check processed_kordoc --extra kordoc_work/ocr
 
 입력: data/<폴더>/*.txt, ai/rahui/rahui_golden_set.json
 출력: 터미널 결과
@@ -13,7 +13,8 @@ import json
 import re
 from pathlib import Path
 
-from ai.rahui.convert import DATA, read_rows
+from ai.rahui.conversion.convert import DATA, read_rows
+from ai.rahui.paths import GOLDEN_SET_PATH
 
 KEEP = re.compile(r"[^0-9A-Za-z가-힣]")
 
@@ -28,14 +29,7 @@ def main() -> None:
         help="data 아래 폴더. 그 안의 *.md(그림을 OCR 한 결과)를 근거 문서 본문 뒤에 붙여서 검사",
     )
     a = ap.parse_args()
-    gold = {
-        g["id"]: g
-        for g in json.loads(
-            (Path(__file__).parent / "rahui_golden_set.json").read_text(
-                encoding="utf-8"
-            )
-        )
-    }
+    gold = {g["id"]: g for g in json.loads(GOLDEN_SET_PATH.read_text(encoding="utf-8"))}
     rows = read_rows()
     extra = ""
     if a.extra:

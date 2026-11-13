@@ -1,13 +1,13 @@
 """kordoc이 추출한 그림을 OCR하고 결과를 문서 텍스트에 추가합니다.
 
 실행:
-  uv run python -m ai.rahui.ocr_images --base processed_mixed --out processed_mixed_ocr --count
-  uv run python -m ai.rahui.ocr_images --base processed_mixed --out processed_mixed_ocr --workers 2
+  uv run python -m ai.rahui.ocr.ocr_images --base processed_mixed --out processed_mixed_ocr --count
+  uv run python -m ai.rahui.ocr.ocr_images --base processed_mixed --out processed_mixed_ocr --workers 2
 
 입력: data/kordoc_work/images/, data/<base>/
 출력: data/<out>/*.txt, data/kordoc_work/ocr/_ocr_log.csv
 후처리:
-  uv run python -m ai.rahui.preprocess --src processed_mixed_ocr --out clean_mixed_ocr
+  uv run python -m ai.rahui.preprocessing.preprocess --src processed_mixed_ocr --out clean_mixed_ocr
 """
 
 import argparse
@@ -23,8 +23,8 @@ import time
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
-from ai.rahui.convert import DATA, read_rows
-from ai.rahui.convert_kordoc import KORDOC, clean
+from ai.rahui.conversion.convert import DATA, read_rows
+from ai.rahui.conversion.convert_kordoc import KORDOC, clean
 
 EXTS = {
     ".png",
