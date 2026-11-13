@@ -64,12 +64,53 @@ AGENT_PROMPT = (
 BASE_DIR = Path(__file__).parent
 DATA_PATH = BASE_DIR / "data" / "data_list.csv"
 TXT_DIR = BASE_DIR / "data" / "processed"  # 변환된 txt 폴더
-DB_DIR = BASE_DIR / "indexes" / "chroma_v1"  # v1 과 v2 가 같은 벡터 DB 사용
-DONE_FILE = DB_DIR / "build_done.txt"  # DB 만들기가 끝까지 됐는지 표시하는 파일
 OUTPUT_DIR = BASE_DIR / "outputs"
+
+
+def db_dir_for(embed_model, chunk_size, chunk_overlap):
+    """설정마다 벡터 DB 폴더를 따로 둠 (조각 크기를 바꾸면 새 DB를 만든다)"""
+    safe = "".join(c if c.isalnum() else "-" for c in embed_model)
+    return BASE_DIR / "indexes" / f"chroma_{safe}_{chunk_size}_{chunk_overlap}"
+
+
+DB_DIR = db_dir_for(EMBED_MODEL, CHUNK_SIZE, CHUNK_OVERLAP)
+DONE_FILE = DB_DIR / "build_done.txt"  # DB 만들기가 끝까지 됐는지 표시하는 파일
 
 load_dotenv(BASE_DIR / ".env")
 OLLAMA_URL = os.getenv("OLLAMA_BASE_URL") or "http://localhost:11434"
+
+
+def configure(chunk_size=None, chunk_overlap=None, top_k=None):
+    """실험 설정 바꾸기 (모델, DB 를 처음 쓰기 전에 호출해야 함)
+
+    예: configure(chunk_size=800, chunk_overlap=100, top_k=5)
+    값을 넣지 않은 항목은 위 설정값을 그대로 쓴다.
+    """
+    global CHUNK_SIZE, CHUNK_OVERLAP, TOP_K, DB_DIR, DONE_FILE, _graph
+    if chunk_size is not None:
+        CHUNK_SIZE = chunk_size
+    if chunk_overlap is not None:
+        CHUNK_OVERLAP = chunk_overlap
+    if top_k is not None:
+        TOP_K = top_k
+    if not 0 <= CHUNK_OVERLAP < CHUNK_SIZE:
+        raise ValueError(f"조각 설정 오류: size={CHUNK_SIZE}, overlap={CHUNK_OVERLAP}")
+    DB_DIR = db_dir_for(EMBED_MODEL, CHUNK_SIZE, CHUNK_OVERLAP)
+    DONE_FILE = DB_DIR / "build_done.txt"
+    _resources.clear()  # 이미 만든 모델, DB 가 있으면 새 설정으로 다시 만들게 비움
+    _graph = None
+
+
+def current_settings():
+    """지금 쓰는 설정값 (결과 파일, 시트 기록용)"""
+    return {
+        "chat_model": CHAT_MODEL,
+        "embed_model": EMBED_MODEL,
+        "chunk_size": CHUNK_SIZE,
+        "chunk_overlap": CHUNK_OVERLAP,
+        "top_k": TOP_K,
+        "num_ctx": NUM_CTX,
+    }
 
 
 def normalize(name):
@@ -134,7 +175,7 @@ def build_vector_store():
 
     # 이전에 끝까지 만들어 둔 DB 가 있으면 그대로 사용
     if DONE_FILE.exists() and not REBUILD_DB:
-        print("저장된 벡터 DB를 사용합니다.")
+        print(f"저장된 벡터 DB를 사용합니다: {DB_DIR.name}")
         return vector_store
 
     # 중간에 멈춘 DB 이거나 다시 만들기를 원하면 지우고 처음부터 재생성
@@ -189,6 +230,12 @@ def get_resources():
         _resources["model"] = make_chat_model()
         _resources["vector_store"] = build_vector_store()
     return _resources["model"], _resources["vector_store"]
+
+
+def warmup():
+    """모델과 DB 를 미리 불러오고 한 번 호출 (첫 문항 응답시간에 로딩 시간이 섞이지 않게)"""
+    model, _ = get_resources()
+    model.invoke("안녕")
 
 
 def history_to_messages(history):
@@ -302,6 +349,7 @@ def answer(message, history=None):
 # 6. 검색 도구와 에이전트
 # =====================================================================
 TOOL_LOG = []  # 에이전트가 검색 도구로 가져온 조각 기록
+TOOL_CALLS = []  # 에이전트가 검색 도구를 부른 검색어 기록 (호출 횟수 확인용)
 
 
 @tool
@@ -311,6 +359,7 @@ def search_documents(query: str) -> str:
     _, vector_store = get_resources()
     retrieved = vector_store.similarity_search_with_score(query, k=TOP_K)
     TOOL_LOG.extend(retrieved)
+    TOOL_CALLS.append(query)
     return format_context(retrieved)
 
 

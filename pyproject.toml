@@ -23,4 +23,5 @@ dependencies = [
     "pyarrow>=26.0.1",
     "tqdm>=4.70.1",
     "pillow>=12.3.0",
+    "langchain-groq>=1.1.3",
 ]
