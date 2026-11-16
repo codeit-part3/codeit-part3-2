@@ -1,4 +1,4 @@
-"""RAG 베이스라인 v2 (노드 함수 변경 환경 개선, 검색도구 및 에이전트 제공)"""
+"""RAG 베이스라인 (rag: LangGraph 검색+답변 / agent: 검색 도구 에이전트)"""
 
 import os
 import time
@@ -258,23 +258,7 @@ def format_context(retrieved):
 
 
 # =====================================================================
-# 4. v1: 검색 + 답변 처리용 함수
-# =====================================================================
-def answer_question(model, vector_store, question, history=None):
-    # 검색은 질문만 사용하고, 앞 대화(history)는 모델에게만 전달
-    retrieved = vector_store.similarity_search_with_score(question, k=TOP_K)
-
-    messages = [
-        SystemMessage(SYSTEM_PROMPT),
-        *history_to_messages(history),
-        HumanMessage(f"컨텍스트:\n{format_context(retrieved)}\n\n질문: {question}"),
-    ]
-    result = model.invoke(messages)
-    return result, retrieved
-
-
-# =====================================================================
-# 5. v2: LangGraph 구조
+# 4. rag: LangGraph 구조
 # =====================================================================
 class RAGState(TypedDict, total=False):
     """노드끼리 주고받는 공용 바구니 (필요 시 추가 가능)."""
@@ -346,7 +330,7 @@ def answer(message, history=None):
 
 
 # =====================================================================
-# 6. 검색 도구와 에이전트
+# 5. 검색 도구와 에이전트
 # =====================================================================
 TOOL_LOG = []  # 에이전트가 검색 도구로 가져온 조각 기록
 TOOL_CALLS = []  # 에이전트가 검색 도구를 부른 검색어 기록 (호출 횟수 확인용)
@@ -370,7 +354,7 @@ def make_agent():
 
 
 # =====================================================================
-# 7. 실행
+# 6. 실행
 # =====================================================================
 def main():
     graph = get_graph()
@@ -397,7 +381,7 @@ def main():
                 ),
                 "prompt_tokens": result.get("prompt_tokens"),
                 "seconds": seconds,
-                "version": "v2",
+                "version": "rag",
                 "chat_model": CHAT_MODEL,
                 "embed_model": EMBED_MODEL,
                 "chunk_size": CHUNK_SIZE,
@@ -408,7 +392,7 @@ def main():
         )
 
     OUTPUT_DIR.mkdir(exist_ok=True)
-    output_path = OUTPUT_DIR / f"baseline_v2_{datetime.now():%Y%m%d_%H%M%S}.csv"
+    output_path = OUTPUT_DIR / f"baseline_rag_{datetime.now():%Y%m%d_%H%M%S}.csv"
     pd.DataFrame(rows).to_csv(output_path, index=False, encoding="utf-8-sig")
     print(f"\n결과 저장: {output_path}")
 
