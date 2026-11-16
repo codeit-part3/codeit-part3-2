@@ -6,6 +6,7 @@
     uv run python evaluate.py --chunk-size 800 --chunk-overlap 100 --name chunk800
     uv run python evaluate.py --engine agent --no-judge
     uv run python evaluate.py --limit 2                          # 빠른 확인 (시트 기록 안 함)
+    uv run python evaluate.py --corpus clean_mixed_ocr_v2        # 다른 말뭉치로 평가
 
 하는 일
 1. 골든셋 질문마다 답변 생성 (rag / agent 중 선택)
@@ -442,6 +443,11 @@ def parse_args():
     exp.add_argument(
         "--chunk-overlap", type=int, default=None, help="이웃 조각끼리 겹치는 글자 수"
     )
+    exp.add_argument(
+        "--corpus",
+        default=None,
+        help="말뭉치 폴더 이름 (data/ 아래, 예: clean_mixed_ocr_v2, 바꾸면 새 DB 생성)",
+    )
     exp.add_argument("--no-warmup", action="store_true", help="모델 미리 불러오기 생략")
 
     rec = parser.add_argument_group("기록")
@@ -474,7 +480,9 @@ def main():
     stamp = f"{datetime.now():%Y%m%d_%H%M%S}"
     args.name = args.name or f"{args.version}_{stamp}"
 
-    baseline.configure(args.chunk_size, args.chunk_overlap, args.top_k)
+    baseline.configure(
+        args.chunk_size, args.chunk_overlap, args.top_k, corpus=args.corpus
+    )
     print(f"설정: {baseline.current_settings()}")
 
     golden = json.loads(Path(args.golden).read_text(encoding="utf-8-sig"))

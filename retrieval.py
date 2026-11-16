@@ -5,6 +5,7 @@
     uv run python retrieval.py --top-k 3 5 --chunk-overlap 50 100
     uv run python retrieval.py --top-k 3 5 --limit 5                 # 빠른 확인 (시트 기록 안 함)
     uv run python retrieval.py --chunk-size 500 800 --name cs --sheet
+    uv run python retrieval.py --corpus clean_mixed_ocr_v2 --top-k 1 3 5   # 다른 말뭉치
 
 하는 일
 1. chunk_size, chunk_overlap, top_k 를 여러 개 주면 모든 조합의 검색 지표를 계산
@@ -92,6 +93,7 @@ def run_combo(golden, notices, chunk_size, chunk_overlap, top_ks):
         part = detail_df[detail_df["top_k"] == k]
         summary.append(
             {
+                "corpus": baseline.CORPUS,
                 "embed_method": EMBED_METHOD,
                 "embed_model": baseline.EMBED_MODEL,
                 "search": search_mode,
@@ -116,6 +118,7 @@ def log_rows_to_sheet(rows, name, memo, tab):
     for row in rows:
         params = {  # 시트 experiment 칸에 글자로 들어감 (열이 없어도 기록이 남음)
             "engine": "retrieval",
+            "corpus": row["corpus"],
             "embed_method": row["embed_method"],
             "embed_model": row["embed_model"],
             "search": row["search"],
@@ -157,6 +160,11 @@ def parse_args():
     exp.add_argument(
         "--chunk-overlap", type=int, nargs="+", default=[baseline.CHUNK_OVERLAP]
     )
+    exp.add_argument(
+        "--corpus",
+        default=None,
+        help="말뭉치 폴더 이름 (data/ 아래, 기본: .env 의 CORPUS_DIR 또는 processed)",
+    )
 
     rec = parser.add_argument_group("기록")
     rec.add_argument("--name", default="retrieval", help="시트 실험 이름의 앞부분")
@@ -195,6 +203,8 @@ def main():
                 )
     if not combos:
         raise SystemExit("실행할 조합이 없습니다.")
+    baseline.configure(corpus=args.corpus)  # 말뭉치는 모든 조합에 공통
+    print(f"말뭉치: data/{baseline.CORPUS}")
     print(
         f"골든셋 {len(golden)}문항, 조각 설정 {len(combos)}개 x top_k {top_ks} 를 평가합니다."
     )

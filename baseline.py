@@ -65,31 +65,43 @@ AGENT_PROMPT = (
 # 경로
 # =====================================================================
 BASE_DIR = Path(__file__).parent
-DATA_PATH = BASE_DIR / "data" / "data_list.csv"
-TXT_DIR = BASE_DIR / "data" / "processed"  # 변환된 txt 폴더
-OUTPUT_DIR = BASE_DIR / "outputs"
-
-
-def db_dir_for(embed_model, chunk_size, chunk_overlap):
-    """설정마다 벡터 DB 폴더를 따로 둠 (조각 크기를 바꾸면 새 DB를 만든다)"""
-    safe = "".join(c if c.isalnum() else "-" for c in embed_model)
-    return BASE_DIR / "indexes" / f"chroma_{safe}_{chunk_size}_{chunk_overlap}"
-
-
-DB_DIR = db_dir_for(EMBED_MODEL, CHUNK_SIZE, CHUNK_OVERLAP)
-DONE_FILE = DB_DIR / "build_done.txt"  # DB 만들기가 끝까지 됐는지 표시하는 파일
-
 load_dotenv(BASE_DIR / ".env")
 OLLAMA_URL = os.getenv("OLLAMA_BASE_URL") or "http://localhost:11434"
 
+DATA_PATH = BASE_DIR / "data" / "data_list.csv"
+# 말뭉치(txt) 폴더 이름 (data/ 아래). .env 의 CORPUS_DIR 또는 --corpus 로 변경
+CORPUS = os.getenv("CORPUS_DIR") or "processed"
+TXT_DIR = BASE_DIR / "data" / CORPUS
+OUTPUT_DIR = BASE_DIR / "outputs"
 
-def configure(chunk_size=None, chunk_overlap=None, top_k=None):
+
+def safe_name(text):
+    """폴더 이름에 쓸 수 없는 글자를 - 로 바꿈 (글자, 숫자, _, - 는 그대로)"""
+    return "".join(c if c.isalnum() or c in "_-" else "-" for c in text)
+
+
+def db_dir_for(corpus, embed_model, chunk_size, chunk_overlap):
+    """설정마다 벡터 DB 폴더를 따로 둠 (말뭉치나 조각 크기를 바꾸면 새 DB를 만든다)"""
+    name = f"chroma_{safe_name(corpus)}_{safe_name(embed_model)}_{chunk_size}_{chunk_overlap}"
+    return BASE_DIR / "indexes" / name
+
+
+DB_DIR = db_dir_for(CORPUS, EMBED_MODEL, CHUNK_SIZE, CHUNK_OVERLAP)
+DONE_FILE = DB_DIR / "build_done.txt"  # DB 만들기가 끝까지 됐는지 표시하는 파일
+
+
+def configure(chunk_size=None, chunk_overlap=None, top_k=None, corpus=None):
     """실험 설정 바꾸기 (모델, DB 를 처음 쓰기 전에 호출해야 함)
 
-    예: configure(chunk_size=800, chunk_overlap=100, top_k=5)
+    예: configure(chunk_size=800, chunk_overlap=100, top_k=5, corpus="clean_mixed_ocr_v2")
     값을 넣지 않은 항목은 위 설정값을 그대로 쓴다.
     """
-    global CHUNK_SIZE, CHUNK_OVERLAP, TOP_K, DB_DIR, DONE_FILE, _graph
+    global CHUNK_SIZE, CHUNK_OVERLAP, TOP_K, CORPUS, TXT_DIR, DB_DIR, DONE_FILE, _graph
+    if corpus is not None:
+        if not (BASE_DIR / "data" / corpus).is_dir():
+            raise FileNotFoundError(f"말뭉치 폴더가 없습니다: data/{corpus}")
+        CORPUS = corpus
+        TXT_DIR = BASE_DIR / "data" / CORPUS
     if chunk_size is not None:
         CHUNK_SIZE = chunk_size
     if chunk_overlap is not None:
@@ -98,7 +110,7 @@ def configure(chunk_size=None, chunk_overlap=None, top_k=None):
         TOP_K = top_k
     if not 0 <= CHUNK_OVERLAP < CHUNK_SIZE:
         raise ValueError(f"조각 설정 오류: size={CHUNK_SIZE}, overlap={CHUNK_OVERLAP}")
-    DB_DIR = db_dir_for(EMBED_MODEL, CHUNK_SIZE, CHUNK_OVERLAP)
+    DB_DIR = db_dir_for(CORPUS, EMBED_MODEL, CHUNK_SIZE, CHUNK_OVERLAP)
     DONE_FILE = DB_DIR / "build_done.txt"
     _resources.clear()  # 이미 만든 모델, DB 가 있으면 새 설정으로 다시 만들게 비움
     _graph = None
@@ -108,6 +120,7 @@ def current_settings():
     """지금 쓰는 설정값 (결과 파일, 시트 기록용)"""
     return {
         "chat_model": CHAT_MODEL,
+        "corpus": CORPUS,
         "embed_model": EMBED_MODEL,
         "chunk_size": CHUNK_SIZE,
         "chunk_overlap": CHUNK_OVERLAP,
