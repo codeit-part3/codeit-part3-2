@@ -1,4 +1,4 @@
-"""RAG 베이스라인 v2 (노드 함수 변경 환경 개선, 검색도구 및 에이전트 제공)"""
+"""RAG 베이스라인 (rag: LangGraph 검색+답변 / agent: 검색 도구 에이전트)"""
 
 import os
 import time
@@ -7,6 +7,7 @@ from datetime import datetime
 from pathlib import Path
 from typing import TypedDict
 
+import numpy as np
 import pandas as pd
 from dotenv import load_dotenv
 from langchain.agents import create_agent
@@ -34,6 +35,8 @@ TOP_K = 3  # 검색해서 모델에 넘길 조각 개수
 EMBED_BATCH = 50  # 한 번에 임베딩할 조각 수
 
 REBUILD_DB = False  # True 면 벡터 DB를 지우고 새로 생성
+EXACT_SEARCH = True  # True: 모든 조각과 거리를 비교 (정확하고 실행마다 결과가 같음)
+# False: Chroma 근사 검색(HNSW). 빠르지만 가까운 조각을 가끔 놓치고 실행마다 달라질 수 있음
 
 # 정답: 예산 130,000,000원(VAT 포함) / 기간 계약일로부터 3개월 / 입찰 방법 제한경쟁입찰
 QUESTIONS = [
@@ -62,31 +65,43 @@ AGENT_PROMPT = (
 # 경로
 # =====================================================================
 BASE_DIR = Path(__file__).parent
-DATA_PATH = BASE_DIR / "data" / "data_list.csv"
-TXT_DIR = BASE_DIR / "data" / "processed"  # 변환된 txt 폴더
-OUTPUT_DIR = BASE_DIR / "outputs"
-
-
-def db_dir_for(embed_model, chunk_size, chunk_overlap):
-    """설정마다 벡터 DB 폴더를 따로 둠 (조각 크기를 바꾸면 새 DB를 만든다)"""
-    safe = "".join(c if c.isalnum() else "-" for c in embed_model)
-    return BASE_DIR / "indexes" / f"chroma_{safe}_{chunk_size}_{chunk_overlap}"
-
-
-DB_DIR = db_dir_for(EMBED_MODEL, CHUNK_SIZE, CHUNK_OVERLAP)
-DONE_FILE = DB_DIR / "build_done.txt"  # DB 만들기가 끝까지 됐는지 표시하는 파일
-
 load_dotenv(BASE_DIR / ".env")
 OLLAMA_URL = os.getenv("OLLAMA_BASE_URL") or "http://localhost:11434"
 
+DATA_PATH = BASE_DIR / "data" / "data_list.csv"
+# 말뭉치(txt) 폴더 이름 (data/ 아래). .env 의 CORPUS_DIR 또는 --corpus 로 변경
+CORPUS = os.getenv("CORPUS_DIR") or "processed"
+TXT_DIR = BASE_DIR / "data" / CORPUS
+OUTPUT_DIR = BASE_DIR / "outputs"
 
-def configure(chunk_size=None, chunk_overlap=None, top_k=None):
+
+def safe_name(text):
+    """폴더 이름에 쓸 수 없는 글자를 - 로 바꿈 (글자, 숫자, _, - 는 그대로)"""
+    return "".join(c if c.isalnum() or c in "_-" else "-" for c in text)
+
+
+def db_dir_for(corpus, embed_model, chunk_size, chunk_overlap):
+    """설정마다 벡터 DB 폴더를 따로 둠 (말뭉치나 조각 크기를 바꾸면 새 DB를 만든다)"""
+    name = f"chroma_{safe_name(corpus)}_{safe_name(embed_model)}_{chunk_size}_{chunk_overlap}"
+    return BASE_DIR / "indexes" / name
+
+
+DB_DIR = db_dir_for(CORPUS, EMBED_MODEL, CHUNK_SIZE, CHUNK_OVERLAP)
+DONE_FILE = DB_DIR / "build_done.txt"  # DB 만들기가 끝까지 됐는지 표시하는 파일
+
+
+def configure(chunk_size=None, chunk_overlap=None, top_k=None, corpus=None):
     """실험 설정 바꾸기 (모델, DB 를 처음 쓰기 전에 호출해야 함)
 
-    예: configure(chunk_size=800, chunk_overlap=100, top_k=5)
+    예: configure(chunk_size=800, chunk_overlap=100, top_k=5, corpus="clean_mixed_ocr_v2")
     값을 넣지 않은 항목은 위 설정값을 그대로 쓴다.
     """
-    global CHUNK_SIZE, CHUNK_OVERLAP, TOP_K, DB_DIR, DONE_FILE, _graph
+    global CHUNK_SIZE, CHUNK_OVERLAP, TOP_K, CORPUS, TXT_DIR, DB_DIR, DONE_FILE, _graph
+    if corpus is not None:
+        if not (BASE_DIR / "data" / corpus).is_dir():
+            raise FileNotFoundError(f"말뭉치 폴더가 없습니다: data/{corpus}")
+        CORPUS = corpus
+        TXT_DIR = BASE_DIR / "data" / CORPUS
     if chunk_size is not None:
         CHUNK_SIZE = chunk_size
     if chunk_overlap is not None:
@@ -95,7 +110,7 @@ def configure(chunk_size=None, chunk_overlap=None, top_k=None):
         TOP_K = top_k
     if not 0 <= CHUNK_OVERLAP < CHUNK_SIZE:
         raise ValueError(f"조각 설정 오류: size={CHUNK_SIZE}, overlap={CHUNK_OVERLAP}")
-    DB_DIR = db_dir_for(EMBED_MODEL, CHUNK_SIZE, CHUNK_OVERLAP)
+    DB_DIR = db_dir_for(CORPUS, EMBED_MODEL, CHUNK_SIZE, CHUNK_OVERLAP)
     DONE_FILE = DB_DIR / "build_done.txt"
     _resources.clear()  # 이미 만든 모델, DB 가 있으면 새 설정으로 다시 만들게 비움
     _graph = None
@@ -105,11 +120,13 @@ def current_settings():
     """지금 쓰는 설정값 (결과 파일, 시트 기록용)"""
     return {
         "chat_model": CHAT_MODEL,
+        "corpus": CORPUS,
         "embed_model": EMBED_MODEL,
         "chunk_size": CHUNK_SIZE,
         "chunk_overlap": CHUNK_OVERLAP,
         "top_k": TOP_K,
         "num_ctx": NUM_CTX,
+        "search": "exact" if EXACT_SEARCH else "hnsw",
     }
 
 
@@ -235,7 +252,42 @@ def get_resources():
 def warmup():
     """모델과 DB 를 미리 불러오고 한 번 호출 (첫 문항 응답시간에 로딩 시간이 섞이지 않게)"""
     model, _ = get_resources()
+    if EXACT_SEARCH:
+        get_exact_index()
     model.invoke("안녕")
+
+
+def get_exact_index():
+    """정확한 검색용: 저장된 조각 임베딩과 내용을 한 번만 메모리에 올려 재사용"""
+    if "exact" not in _resources:
+        _, vector_store = get_resources()
+        data = vector_store._collection.get(
+            include=["embeddings", "documents", "metadatas"]
+        )
+        matrix = np.asarray(data["embeddings"], dtype=np.float32)
+        docs = [
+            Document(page_content=text, metadata=meta or {})
+            for text, meta in zip(data["documents"], data["metadatas"], strict=True)
+        ]
+        _resources["exact"] = (matrix, docs)
+    return _resources["exact"]
+
+
+def search(query, k=None):
+    """질문과 가까운 조각 k 개를 [(조각, 거리), ...] 로 반환 (거리가 작을수록 가까움)
+
+    rag 검색 노드, agent 검색 도구, retrieval.py 가 모두 이 함수를 쓴다.
+    """
+    k = k or TOP_K
+    _, vector_store = get_resources()
+    if not EXACT_SEARCH:
+        return vector_store.similarity_search_with_score(query, k=k)
+
+    matrix, docs = get_exact_index()
+    q = np.asarray(vector_store.embeddings.embed_query(query), dtype=np.float32)
+    dist = ((matrix - q) ** 2).sum(axis=1)  # Chroma 의 l2 와 같은 거리 (제곱 거리)
+    top = np.argsort(dist, kind="stable")[:k]  # 거리가 같으면 저장 순서대로
+    return [(docs[i], float(dist[i])) for i in top]
 
 
 def history_to_messages(history):
@@ -258,23 +310,7 @@ def format_context(retrieved):
 
 
 # =====================================================================
-# 4. v1: 검색 + 답변 처리용 함수
-# =====================================================================
-def answer_question(model, vector_store, question, history=None):
-    # 검색은 질문만 사용하고, 앞 대화(history)는 모델에게만 전달
-    retrieved = vector_store.similarity_search_with_score(question, k=TOP_K)
-
-    messages = [
-        SystemMessage(SYSTEM_PROMPT),
-        *history_to_messages(history),
-        HumanMessage(f"컨텍스트:\n{format_context(retrieved)}\n\n질문: {question}"),
-    ]
-    result = model.invoke(messages)
-    return result, retrieved
-
-
-# =====================================================================
-# 5. v2: LangGraph 구조
+# 4. rag: LangGraph 구조
 # =====================================================================
 class RAGState(TypedDict, total=False):
     """노드끼리 주고받는 공용 바구니 (필요 시 추가 가능)."""
@@ -288,8 +324,7 @@ class RAGState(TypedDict, total=False):
 
 def retrieve(state: RAGState):
     """검색 노드: 질문과 비슷한 조각을 TOP_K 개 가져오기"""
-    _, vector_store = get_resources()
-    retrieved = vector_store.similarity_search_with_score(state["question"], k=TOP_K)
+    retrieved = search(state["question"])
     return {"retrieved": retrieved}
 
 
@@ -346,7 +381,7 @@ def answer(message, history=None):
 
 
 # =====================================================================
-# 6. 검색 도구와 에이전트
+# 5. 검색 도구와 에이전트
 # =====================================================================
 TOOL_LOG = []  # 에이전트가 검색 도구로 가져온 조각 기록
 TOOL_CALLS = []  # 에이전트가 검색 도구를 부른 검색어 기록 (호출 횟수 확인용)
@@ -356,8 +391,7 @@ TOOL_CALLS = []  # 에이전트가 검색 도구를 부른 검색어 기록 (호
 def search_documents(query: str) -> str:
     """공공 입찰 제안요청서(RFP) 문서에서 질문과 관련된 내용을 검색.
     사업 예산, 사업 기간, 입찰 방법, 평가 기준, 요구사항 등을 찾을 때 사용"""
-    _, vector_store = get_resources()
-    retrieved = vector_store.similarity_search_with_score(query, k=TOP_K)
+    retrieved = search(query)
     TOOL_LOG.extend(retrieved)
     TOOL_CALLS.append(query)
     return format_context(retrieved)
@@ -370,7 +404,7 @@ def make_agent():
 
 
 # =====================================================================
-# 7. 실행
+# 6. 실행
 # =====================================================================
 def main():
     graph = get_graph()
@@ -397,7 +431,7 @@ def main():
                 ),
                 "prompt_tokens": result.get("prompt_tokens"),
                 "seconds": seconds,
-                "version": "v2",
+                "version": "rag",
                 "chat_model": CHAT_MODEL,
                 "embed_model": EMBED_MODEL,
                 "chunk_size": CHUNK_SIZE,
@@ -408,7 +442,7 @@ def main():
         )
 
     OUTPUT_DIR.mkdir(exist_ok=True)
-    output_path = OUTPUT_DIR / f"baseline_v2_{datetime.now():%Y%m%d_%H%M%S}.csv"
+    output_path = OUTPUT_DIR / f"baseline_rag_{datetime.now():%Y%m%d_%H%M%S}.csv"
     pd.DataFrame(rows).to_csv(output_path, index=False, encoding="utf-8-sig")
     print(f"\n결과 저장: {output_path}")
 
