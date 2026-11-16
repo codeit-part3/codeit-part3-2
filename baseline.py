@@ -70,8 +70,15 @@ OLLAMA_URL = os.getenv("OLLAMA_BASE_URL") or "http://localhost:11434"
 
 DATA_PATH = BASE_DIR / "data" / "data_list.csv"
 # 말뭉치(txt) 폴더 이름 (data/ 아래). .env 의 CORPUS_DIR 또는 --corpus 로 변경
-CORPUS = os.getenv("CORPUS_DIR") or "processed"
+CORPUS = os.getenv("CORPUS_DIR") or "clean_mixed_ocr_v2"
 TXT_DIR = BASE_DIR / "data" / CORPUS
+# 골든셋 파일 (프로젝트 폴더 기준 경로). .env 의 GOLDEN_FILE 또는 --golden 으로 변경
+GOLDEN_PATH = BASE_DIR / (
+    os.getenv("GOLDEN_FILE") or "data/golden/rahui_golden_set_v2_2.json"
+)
+# 골든셋별 평가 제외 문항 (파일 이름 기준). 근거: ai/data_basic/GOLDEN_FORMAT.md
+# q27, q29: 그림, 메타데이터에만 답이 있어 본문 근거를 찾을 수 없음
+GOLDEN_EXCLUDE = {"rahui_golden_set_v2_2": {"q27", "q29"}}
 OUTPUT_DIR = BASE_DIR / "outputs"
 
 
@@ -90,13 +97,18 @@ DB_DIR = db_dir_for(CORPUS, EMBED_MODEL, CHUNK_SIZE, CHUNK_OVERLAP)
 DONE_FILE = DB_DIR / "build_done.txt"  # DB 만들기가 끝까지 됐는지 표시하는 파일
 
 
-def configure(chunk_size=None, chunk_overlap=None, top_k=None, corpus=None):
+def configure(
+    chunk_size=None, chunk_overlap=None, top_k=None, corpus=None, golden=None
+):
     """실험 설정 바꾸기 (모델, DB 를 처음 쓰기 전에 호출해야 함)
 
     예: configure(chunk_size=800, chunk_overlap=100, top_k=5, corpus="clean_mixed_ocr_v2")
     값을 넣지 않은 항목은 위 설정값을 그대로 쓴다.
     """
     global CHUNK_SIZE, CHUNK_OVERLAP, TOP_K, CORPUS, TXT_DIR, DB_DIR, DONE_FILE, _graph
+    global GOLDEN_PATH
+    if golden is not None:
+        GOLDEN_PATH = BASE_DIR / golden
     if corpus is not None:
         if not (BASE_DIR / "data" / corpus).is_dir():
             raise FileNotFoundError(f"말뭉치 폴더가 없습니다: data/{corpus}")
@@ -121,6 +133,7 @@ def current_settings():
     return {
         "chat_model": CHAT_MODEL,
         "corpus": CORPUS,
+        "golden": GOLDEN_PATH.stem,
         "embed_model": EMBED_MODEL,
         "chunk_size": CHUNK_SIZE,
         "chunk_overlap": CHUNK_OVERLAP,
@@ -194,6 +207,12 @@ def build_vector_store():
     if DONE_FILE.exists() and not REBUILD_DB:
         print(f"저장된 벡터 DB를 사용합니다: {DB_DIR.name}")
         return vector_store
+
+    if not TXT_DIR.is_dir():
+        raise FileNotFoundError(
+            f"말뭉치 폴더가 없습니다: data/{CORPUS} "
+            "(비밀방의 data_bundle.zip 을 data/ 에 풀었는지 확인)"
+        )
 
     # 중간에 멈춘 DB 이거나 다시 만들기를 원하면 지우고 처음부터 재생성
     vector_store.delete_collection()
