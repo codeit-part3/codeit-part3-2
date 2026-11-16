@@ -7,6 +7,7 @@ from datetime import datetime
 from pathlib import Path
 from typing import TypedDict
 
+import numpy as np
 import pandas as pd
 from dotenv import load_dotenv
 from langchain.agents import create_agent
@@ -34,6 +35,8 @@ TOP_K = 3  # 검색해서 모델에 넘길 조각 개수
 EMBED_BATCH = 50  # 한 번에 임베딩할 조각 수
 
 REBUILD_DB = False  # True 면 벡터 DB를 지우고 새로 생성
+EXACT_SEARCH = True  # True: 모든 조각과 거리를 비교 (정확하고 실행마다 결과가 같음)
+# False: Chroma 근사 검색(HNSW). 빠르지만 가까운 조각을 가끔 놓치고 실행마다 달라질 수 있음
 
 # 정답: 예산 130,000,000원(VAT 포함) / 기간 계약일로부터 3개월 / 입찰 방법 제한경쟁입찰
 QUESTIONS = [
@@ -110,6 +113,7 @@ def current_settings():
         "chunk_overlap": CHUNK_OVERLAP,
         "top_k": TOP_K,
         "num_ctx": NUM_CTX,
+        "search": "exact" if EXACT_SEARCH else "hnsw",
     }
 
 
@@ -235,7 +239,42 @@ def get_resources():
 def warmup():
     """모델과 DB 를 미리 불러오고 한 번 호출 (첫 문항 응답시간에 로딩 시간이 섞이지 않게)"""
     model, _ = get_resources()
+    if EXACT_SEARCH:
+        get_exact_index()
     model.invoke("안녕")
+
+
+def get_exact_index():
+    """정확한 검색용: 저장된 조각 임베딩과 내용을 한 번만 메모리에 올려 재사용"""
+    if "exact" not in _resources:
+        _, vector_store = get_resources()
+        data = vector_store._collection.get(
+            include=["embeddings", "documents", "metadatas"]
+        )
+        matrix = np.asarray(data["embeddings"], dtype=np.float32)
+        docs = [
+            Document(page_content=text, metadata=meta or {})
+            for text, meta in zip(data["documents"], data["metadatas"], strict=True)
+        ]
+        _resources["exact"] = (matrix, docs)
+    return _resources["exact"]
+
+
+def search(query, k=None):
+    """질문과 가까운 조각 k 개를 [(조각, 거리), ...] 로 반환 (거리가 작을수록 가까움)
+
+    rag 검색 노드, agent 검색 도구, retrieval.py 가 모두 이 함수를 쓴다.
+    """
+    k = k or TOP_K
+    _, vector_store = get_resources()
+    if not EXACT_SEARCH:
+        return vector_store.similarity_search_with_score(query, k=k)
+
+    matrix, docs = get_exact_index()
+    q = np.asarray(vector_store.embeddings.embed_query(query), dtype=np.float32)
+    dist = ((matrix - q) ** 2).sum(axis=1)  # Chroma 의 l2 와 같은 거리 (제곱 거리)
+    top = np.argsort(dist, kind="stable")[:k]  # 거리가 같으면 저장 순서대로
+    return [(docs[i], float(dist[i])) for i in top]
 
 
 def history_to_messages(history):
@@ -272,8 +311,7 @@ class RAGState(TypedDict, total=False):
 
 def retrieve(state: RAGState):
     """검색 노드: 질문과 비슷한 조각을 TOP_K 개 가져오기"""
-    _, vector_store = get_resources()
-    retrieved = vector_store.similarity_search_with_score(state["question"], k=TOP_K)
+    retrieved = search(state["question"])
     return {"retrieved": retrieved}
 
 
@@ -340,8 +378,7 @@ TOOL_CALLS = []  # 에이전트가 검색 도구를 부른 검색어 기록 (호
 def search_documents(query: str) -> str:
     """공공 입찰 제안요청서(RFP) 문서에서 질문과 관련된 내용을 검색.
     사업 예산, 사업 기간, 입찰 방법, 평가 기준, 요구사항 등을 찾을 때 사용"""
-    _, vector_store = get_resources()
-    retrieved = vector_store.similarity_search_with_score(query, k=TOP_K)
+    retrieved = search(query)
     TOOL_LOG.extend(retrieved)
     TOOL_CALLS.append(query)
     return format_context(retrieved)

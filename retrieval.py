@@ -45,16 +45,17 @@ def run_combo(golden, notices, chunk_size, chunk_overlap, top_ks):
     """
     max_k = max(top_ks)
     baseline.configure(chunk_size, chunk_overlap, max_k)
-    vector_store = baseline.build_vector_store()
+    baseline.get_resources()  # 벡터 DB 준비 (없으면 새로 만듦)
+    if baseline.EXACT_SEARCH:
+        baseline.get_exact_index()  # 불러오는 시간이 첫 문항 검색 시간에 섞이지 않게
     n_chunks = chunk_count()
+    search_mode = baseline.current_settings()["search"]
 
     details = []
     for item, wanted_ids in zip(golden, notices, strict=True):
         start = time.time()
         try:
-            retrieved = vector_store.similarity_search_with_score(
-                item["question"], k=max_k
-            )
+            retrieved = baseline.search(item["question"], k=max_k)
             error = ""
         except Exception as e:  # 한 문항이 실패해도 나머지는 계속 실행
             retrieved = []
@@ -93,6 +94,7 @@ def run_combo(golden, notices, chunk_size, chunk_overlap, top_ks):
             {
                 "embed_method": EMBED_METHOD,
                 "embed_model": baseline.EMBED_MODEL,
+                "search": search_mode,
                 "chunk_size": chunk_size,
                 "chunk_overlap": chunk_overlap,
                 "top_k": k,
@@ -116,6 +118,7 @@ def log_rows_to_sheet(rows, name, memo, tab):
             "engine": "retrieval",
             "embed_method": row["embed_method"],
             "embed_model": row["embed_model"],
+            "search": row["search"],
             "chunk_size": row["chunk_size"],
             "chunk_overlap": row["chunk_overlap"],
             "top_k": row["top_k"],
