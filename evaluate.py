@@ -1,14 +1,15 @@
 """골든셋 평가 스크립트
 
 실행 예
-    uv run python evaluate.py                                   # v2, 기본 설정, 채점과 시트 기록 포함
+    uv run python evaluate.py                                   # rag, 기본 설정, 채점과 시트 기록 포함
     uv run python evaluate.py --top-k 5 --name topk5 --memo "검색 조각 5개"
     uv run python evaluate.py --chunk-size 800 --chunk-overlap 100 --name chunk800
     uv run python evaluate.py --engine agent --no-judge
     uv run python evaluate.py --limit 2                          # 빠른 확인 (시트 기록 안 함)
+    uv run python evaluate.py --corpus clean_mixed_ocr_v2        # 다른 말뭉치로 평가
 
 하는 일
-1. 골든셋 질문마다 답변 생성 (v1 / v2 / agent 중 선택)
+1. 골든셋 질문마다 답변 생성 (rag / agent 중 선택)
 2. 규칙 지표 계산 (LLM 없이): accuracy, keyword_recall, hit_rate, mrr, latency_sec, n_tool_calls
 3. 문항별 결과를 outputs/ 에 한 문항씩 저장
 4. LLM 채점 (judge.py, 기본 켜짐): faithfulness, correctness
@@ -76,21 +77,7 @@ MONEY = r"\d{1,3}(?:,\d{3})+|\d+\s*(?:원|만원|천원|백만원|천만원|억)
 # =====================================================================
 def make_answer_fn(engine):
     """answer_fn(question, history) -> dict(answer, retrieved, prompt_tokens, n_tool_calls)"""
-    if engine == "v1":
-        model, vector_store = baseline.get_resources()
-
-        def answer_fn(question, history):
-            result, retrieved = baseline.answer_question(
-                model, vector_store, question, history
-            )
-            return {
-                "answer": result.text,
-                "retrieved": retrieved,
-                "prompt_tokens": result.response_metadata.get("prompt_eval_count"),
-                "n_tool_calls": None,
-            }
-
-    elif engine == "v2":
+    if engine == "rag":
         graph = baseline.get_graph()
 
         def answer_fn(question, history):
@@ -438,7 +425,7 @@ def parse_args():
     parser.add_argument(
         "--limit", type=int, default=None, help="앞에서 N문항만 실행 (시트 기록 안 함)"
     )
-    parser.add_argument("--engine", default="v2", choices=["v1", "v2", "agent"])
+    parser.add_argument("--engine", default="rag", choices=["rag", "agent"])
     parser.add_argument(
         "--version", default=None, help="결과 파일 이름 (기본: 엔진 이름)"
     )
@@ -455,6 +442,11 @@ def parse_args():
     )
     exp.add_argument(
         "--chunk-overlap", type=int, default=None, help="이웃 조각끼리 겹치는 글자 수"
+    )
+    exp.add_argument(
+        "--corpus",
+        default=None,
+        help="말뭉치 폴더 이름 (data/ 아래, 예: clean_mixed_ocr_v2, 바꾸면 새 DB 생성)",
     )
     exp.add_argument("--no-warmup", action="store_true", help="모델 미리 불러오기 생략")
 
@@ -488,7 +480,9 @@ def main():
     stamp = f"{datetime.now():%Y%m%d_%H%M%S}"
     args.name = args.name or f"{args.version}_{stamp}"
 
-    baseline.configure(args.chunk_size, args.chunk_overlap, args.top_k)
+    baseline.configure(
+        args.chunk_size, args.chunk_overlap, args.top_k, corpus=args.corpus
+    )
     print(f"설정: {baseline.current_settings()}")
 
     golden = json.loads(Path(args.golden).read_text(encoding="utf-8-sig"))
