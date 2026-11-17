@@ -5,7 +5,7 @@
     uv run python retrieval.py --top-k 3 5 --chunk-overlap 50 100
     uv run python retrieval.py --top-k 3 5 --limit 5                 # 빠른 확인 (시트 기록 안 함)
     uv run python retrieval.py --chunk-size 500 800 --name cs --sheet
-    uv run python retrieval.py --corpus clean_mixed_ocr_v2 --top-k 1 3 5   # 다른 말뭉치
+    uv run python retrieval.py --corpus processed --golden data/goldenset.json   # 예전 데이터
 
 하는 일
 1. chunk_size, chunk_overlap, top_k 를 여러 개 주면 모든 조합의 검색 지표를 계산
@@ -15,15 +15,13 @@
 """
 
 import argparse
-import json
 import time
 from datetime import datetime
-from pathlib import Path
 
 import pandas as pd
 
-import baseline
 import evaluate
+from engines.local_model import baseline
 
 EMBED_METHOD = "ollama"  # 임베딩 방식 (선택 옵션은 다음 작업에서 추가)
 SHEET_METRICS = ("hit_rate", "mrr", "context_hit")
@@ -94,6 +92,7 @@ def run_combo(golden, notices, chunk_size, chunk_overlap, top_ks):
         summary.append(
             {
                 "corpus": baseline.CORPUS,
+                "golden": baseline.GOLDEN_PATH.stem,
                 "embed_method": EMBED_METHOD,
                 "embed_model": baseline.EMBED_MODEL,
                 "search": search_mode,
@@ -119,6 +118,7 @@ def log_rows_to_sheet(rows, name, memo, tab):
         params = {  # 시트 experiment 칸에 글자로 들어감 (열이 없어도 기록이 남음)
             "engine": "retrieval",
             "corpus": row["corpus"],
+            "golden": row["golden"],
             "embed_method": row["embed_method"],
             "embed_model": row["embed_model"],
             "search": row["search"],
@@ -148,7 +148,9 @@ def parse_args():
         description="검색 지표(hit_rate, mrr, context_hit)만 여러 설정으로 비교합니다."
     )
     parser.add_argument(
-        "--golden", default=str(baseline.BASE_DIR / "data" / "goldenset.json")
+        "--golden",
+        default=None,
+        help="골든셋 파일 경로 (기본: config.py 의 GOLDEN_FILE)",
     )
     parser.add_argument(
         "--limit", type=int, default=None, help="앞에서 N문항만 실행 (시트 기록 안 함)"
@@ -163,7 +165,7 @@ def parse_args():
     exp.add_argument(
         "--corpus",
         default=None,
-        help="말뭉치 폴더 이름 (data/ 아래, 기본: .env 의 CORPUS_DIR 또는 processed)",
+        help="말뭉치 폴더 이름 (data/ 아래, 기본: config.py 의 CORPUS)",
     )
 
     rec = parser.add_argument_group("기록")
@@ -185,9 +187,10 @@ def main():
     stamp = f"{datetime.now():%Y%m%d_%H%M%S}"
     top_ks = sorted(set(args.top_k))
 
-    golden = json.loads(Path(args.golden).read_text(encoding="utf-8-sig"))
-    if args.limit:
-        golden = golden[: args.limit]
+    # 말뭉치와 골든셋은 모든 조합에 공통
+    baseline.configure(corpus=args.corpus, golden=args.golden)
+    print(f"말뭉치: data/{baseline.CORPUS} | 골든셋: {baseline.GOLDEN_PATH.name}")
+    golden = evaluate.load_golden(args.limit)
 
     file_to_notice = evaluate.load_file_to_notice()
     notices = [evaluate.evidence_notice_ids(it, file_to_notice) for it in golden]
@@ -203,8 +206,6 @@ def main():
                 )
     if not combos:
         raise SystemExit("실행할 조합이 없습니다.")
-    baseline.configure(corpus=args.corpus)  # 말뭉치는 모든 조합에 공통
-    print(f"말뭉치: data/{baseline.CORPUS}")
     print(
         f"골든셋 {len(golden)}문항, 조각 설정 {len(combos)}개 x top_k {top_ks} 를 평가합니다."
     )
