@@ -6,6 +6,7 @@
     uv run python evaluate.py --chunk-size 800 --chunk-overlap 100 --name chunk800
     uv run python evaluate.py --engine agent --no-judge
     uv run python evaluate.py --limit 2                          # 빠른 확인 (시트 기록 안 함)
+    uv run python evaluate.py --prompt rag_v2 --name rag_prompt_v2   # 프롬프트 바꿔 실험
     uv run python evaluate.py --corpus processed --golden data/goldenset.json   # 예전 데이터로 평가
 
 하는 일
@@ -26,8 +27,8 @@ from datetime import datetime
 import pandas as pd
 from langchain.messages import HumanMessage
 
-import baseline
 import judge
+from engines.local_model import baseline
 
 # 골든셋의 level 을 4개 유형으로 묶습니다. (팀 집계 방식 초안)
 GROUPS = {
@@ -247,9 +248,9 @@ def guess_cause(item, retrieved, wanted_ids):
 # =====================================================================
 # 5. 실행과 집계
 # =====================================================================
-def run_eval(golden, answer_fn, file_to_notice, version, result_path):
+def run_eval(golden, answer_fn, file_to_notice, version, result_path, engine=None):
     rows = []
-    settings = baseline.current_settings()
+    settings = baseline.current_settings(engine)
     for item in golden:
         start = time.time()
         try:
@@ -415,7 +416,7 @@ def summarize(df):
 def log_to_sheet(args, metrics, judge_summary, golden_size):
     from common.sheet_log import log_experiment
 
-    settings = baseline.current_settings()
+    settings = baseline.current_settings(args.engine)
     params = {"engine": args.engine, **settings, "questions": golden_size}
     memo = args.memo
     judge_scores = {}
@@ -438,7 +439,7 @@ def parse_args():
     parser.add_argument(
         "--golden",
         default=None,
-        help="골든셋 파일 경로 (기본: .env 의 GOLDEN_FILE 또는 74문항 골든셋)",
+        help="골든셋 파일 경로 (기본: config.py 의 GOLDEN_FILE)",
     )
     parser.add_argument(
         "--limit", type=int, default=None, help="앞에서 N문항만 실행 (시트 기록 안 함)"
@@ -448,7 +449,9 @@ def parse_args():
         "--version", default=None, help="결과 파일 이름 (기본: 엔진 이름)"
     )
 
-    exp = parser.add_argument_group("실험 설정 (안 쓰면 baseline.py 의 값)")
+    exp = parser.add_argument_group(
+        "실험 설정 (안 쓰면 engines/local_model/config.py 의 값)"
+    )
     exp.add_argument(
         "--top-k", type=int, default=None, help="검색해서 모델에 넘길 조각 개수"
     )
@@ -465,6 +468,11 @@ def parse_args():
         "--corpus",
         default=None,
         help="말뭉치 폴더 이름 (data/ 아래, 예: clean_mixed_ocr_v2, 바꾸면 새 DB 생성)",
+    )
+    exp.add_argument(
+        "--prompt",
+        default=None,
+        help="프롬프트 파일 이름 (prompts/ 안, 예: rag_v2). 엔진 이름으로 시작해야 함",
     )
     exp.add_argument("--no-warmup", action="store_true", help="모델 미리 불러오기 생략")
 
@@ -498,14 +506,19 @@ def main():
     stamp = f"{datetime.now():%Y%m%d_%H%M%S}"
     args.name = args.name or f"{args.version}_{stamp}"
 
+    if args.prompt and not args.prompt.startswith(args.engine + "_"):
+        raise SystemExit(
+            f"{args.engine} 엔진에는 {args.engine}_ 로 시작하는 프롬프트를 쓰세요: {args.prompt}"
+        )
     baseline.configure(
         args.chunk_size,
         args.chunk_overlap,
         args.top_k,
         corpus=args.corpus,
         golden=args.golden,
+        prompt=args.prompt,
     )
-    print(f"설정: {baseline.current_settings()}")
+    print(f"설정: {baseline.current_settings(args.engine)}")
 
     golden = load_golden(args.limit)
     print(f"골든셋 {len(golden)}문항을 평가합니다.")
@@ -518,7 +531,9 @@ def main():
     if not args.no_warmup:
         print("모델 미리 불러오는 중 (응답시간에서 제외)")
         baseline.warmup()
-    df = run_eval(golden, answer_fn, load_file_to_notice(), args.version, result_path)
+    df = run_eval(
+        golden, answer_fn, load_file_to_notice(), args.version, result_path, args.engine
+    )
 
     table = summarize(df)
     metrics = overall_metrics(df)

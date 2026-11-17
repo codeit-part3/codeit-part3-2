@@ -20,8 +20,8 @@ from datetime import datetime
 
 import pandas as pd
 
-import baseline
 import evaluate
+from engines.local_model import baseline
 
 EMBED_METHOD = "ollama"  # 임베딩 방식 (선택 옵션은 다음 작업에서 추가)
 SHEET_METRICS = ("hit_rate", "mrr", "context_hit")
@@ -150,7 +150,7 @@ def parse_args():
     parser.add_argument(
         "--golden",
         default=None,
-        help="골든셋 파일 경로 (기본: .env 의 GOLDEN_FILE 또는 74문항 골든셋)",
+        help="골든셋 파일 경로 (기본: config.py 의 GOLDEN_FILE)",
     )
     parser.add_argument(
         "--limit", type=int, default=None, help="앞에서 N문항만 실행 (시트 기록 안 함)"
@@ -165,7 +165,7 @@ def parse_args():
     exp.add_argument(
         "--corpus",
         default=None,
-        help="말뭉치 폴더 이름 (data/ 아래, 기본: .env 의 CORPUS_DIR 또는 clean_mixed_ocr_v2)",
+        help="말뭉치 폴더 이름 (data/ 아래, 기본: config.py 의 CORPUS)",
     )
 
     rec = parser.add_argument_group("기록")
