@@ -24,7 +24,7 @@ import evaluate
 from engines.local_model import baseline
 
 EMBED_METHOD = "ollama"  # 임베딩 방식 (선택 옵션은 다음 작업에서 추가)
-SHEET_METRICS = ("hit_rate", "mrr", "context_hit")
+SHEET_METRICS = ("hit_rate", "mrr", "context_hit", "search_sec")
 
 
 def chunk_count():
@@ -116,10 +116,6 @@ def log_rows_to_sheet(rows, name, memo, tab):
 
     for row in rows:
         metrics = {k: row[k] for k in SHEET_METRICS if row[k] is not None}
-        # latency_sec 칸: 여기서는 답변 생성 없이 '검색 시간'만 기록 (evaluate.py 는 검색 + 답변 시간)
-        # 같은 칸이라 비교할 때는 experiment 칸의 engine=retrieval 로 구분
-        if row["search_sec"] is not None:
-            metrics["latency_sec"] = row["search_sec"]
         params = {  # 시트 experiment 칸에 글자로 들어감 (열이 없어도 기록이 남음)
             "engine": "retrieval",
             "corpus": row["corpus"],

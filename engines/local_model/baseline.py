@@ -326,21 +326,27 @@ def get_exact_index():
     return _resources["exact"]
 
 
+SEARCH_TIMES = []  # search() 를 부를 때마다 걸린 초 (evaluate.py 가 문항마다 비우고 더해서 search_sec 로 기록)
+
+
 def search(query, k=None):
     """질문과 가까운 조각 k 개를 [(조각, 거리), ...] 로 반환 (거리가 작을수록 가까움)
 
     rag 검색 노드, agent 검색 도구, retrieval.py 가 모두 이 함수를 쓴다.
     """
+    start = time.time()
     k = k or TOP_K
     _, vector_store = get_resources()
     if not EXACT_SEARCH:
-        return vector_store.similarity_search_with_score(query, k=k)
-
-    matrix, docs = get_exact_index()
-    q = np.asarray(vector_store.embeddings.embed_query(query), dtype=np.float32)
-    dist = ((matrix - q) ** 2).sum(axis=1)  # Chroma 의 l2 와 같은 거리 (제곱 거리)
-    top = np.argsort(dist, kind="stable")[:k]  # 거리가 같으면 저장 순서대로
-    return [(docs[i], float(dist[i])) for i in top]
+        result = vector_store.similarity_search_with_score(query, k=k)
+    else:
+        matrix, docs = get_exact_index()
+        q = np.asarray(vector_store.embeddings.embed_query(query), dtype=np.float32)
+        dist = ((matrix - q) ** 2).sum(axis=1)  # Chroma 의 l2 와 같은 거리 (제곱 거리)
+        top = np.argsort(dist, kind="stable")[:k]  # 거리가 같으면 저장 순서대로
+        result = [(docs[i], float(dist[i])) for i in top]
+    SEARCH_TIMES.append(time.time() - start)
+    return result
 
 
 def history_to_messages(history):
