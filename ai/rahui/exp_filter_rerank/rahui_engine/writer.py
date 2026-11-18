@@ -1726,6 +1726,10 @@ def fill_form(lines: list[str], meta: dict):
             continue
         # 표가 아닌 줄: "※", "주)", "*" 등으로 시작하면 원문 주석으로 모아서 답변 끝에 보여 준다. 나머지는 버린다.
         if "|" not in line:
+            # "(단위 : 천원)" 같은 단위 표기 줄은 금액 예시(000,000)를 읽는 데 필요하므로 본문에 그대로 남긴다.
+            if len(line) <= 40 and re.match(r"^[(\[]?\s*단위\s*[:：]", line):
+                out.append(line)
+                continue
             if line.startswith(("※", "주)", "주 )", "*", "○ 주", "※")) or re.match(
                 r"^\d+\.\s", line
             ):
