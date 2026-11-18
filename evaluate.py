@@ -92,18 +92,26 @@ def load_golden(limit=None):
 # =====================================================================
 # 1. 평가할 엔진 : 엔진 변환 시 이곳에서 진행
 # =====================================================================
+def search_seconds():
+    """이번 문항에서 검색에 걸린 시간 합계 (초). 검색을 안 했으면 None"""
+    times = baseline.SEARCH_TIMES
+    return round(sum(times), 3) if times else None
+
+
 def make_answer_fn(engine):
     """answer_fn(question, history) -> dict(answer, retrieved, prompt_tokens, n_tool_calls)"""
     if engine == "rag":
         graph = baseline.get_graph()
 
         def answer_fn(question, history):
+            baseline.SEARCH_TIMES.clear()
             state = graph.invoke({"question": question, "history": history or []})
             return {
                 "answer": state["answer"],
                 "retrieved": state["retrieved"],
                 "prompt_tokens": state.get("prompt_tokens"),
                 "n_tool_calls": None,
+                "search_sec": search_seconds(),
             }
 
     else:  # agent
@@ -112,6 +120,7 @@ def make_answer_fn(engine):
         def answer_fn(question, history):
             baseline.TOOL_LOG.clear()
             baseline.TOOL_CALLS.clear()
+            baseline.SEARCH_TIMES.clear()
             messages = [*baseline.history_to_messages(history), HumanMessage(question)]
             result = agent.invoke({"messages": messages})
             return {
@@ -119,6 +128,7 @@ def make_answer_fn(engine):
                 "retrieved": list(baseline.TOOL_LOG),
                 "prompt_tokens": None,
                 "n_tool_calls": len(baseline.TOOL_CALLS),
+                "search_sec": search_seconds(),  # 여러 번 검색하면 합계
             }
 
     return answer_fn
@@ -262,6 +272,7 @@ def run_eval(golden, answer_fn, file_to_notice, version, result_path, engine=Non
                 "retrieved": [],
                 "prompt_tokens": None,
                 "n_tool_calls": None,
+                "search_sec": None,
             }
             error = str(e)
         seconds = round(time.time() - start, 2)
@@ -306,6 +317,7 @@ def run_eval(golden, answer_fn, file_to_notice, version, result_path, engine=Non
                 "원인(자동추정)": cause,
                 "원인(직접기입)": "",  # 변환 / 검색 / 모델 중 직접 적기
                 "seconds": seconds,
+                "search_sec": out["search_sec"],  # seconds 에 포함된 검색 시간
                 "error": error or "",
                 "prompt_tokens": out["prompt_tokens"],
                 "n_tool_calls": out["n_tool_calls"],
@@ -339,6 +351,7 @@ def overall_metrics(df):
         "mrr": mean_or_none(df["rr"]),
         "context_hit": mean_or_none(df["context_hit"]),
         "latency_sec": mean_or_none(df["seconds"]),
+        "search_sec": mean_or_none(df["search_sec"]),
         "n_tool_calls": mean_or_none(df["n_tool_calls"]),
         "error_count": int((df["error"].fillna("") != "").sum()),
     }
@@ -360,7 +373,8 @@ SCOREBOARD = [
     ("mrr", "정답 문서 순위 점수", "pct", "높을수록"),
     ("context_hit", "정답 조각 검색 성공률", "pct", "높을수록"),
     ("운영", None, None, None),
-    ("latency_sec", "평균 응답시간", "sec", "낮을수록"),
+    ("latency_sec", "평균 응답시간 (검색 + 답변)", "sec", "낮을수록"),
+    ("search_sec", "평균 검색시간 (응답시간에 포함)", "sec", "낮을수록"),
     ("n_tool_calls", "평균 도구 호출 수 (agent)", "avg", "-"),
     ("error_count", "실행 오류 문항 수", "count", "낮을수록"),
 ]
@@ -378,7 +392,7 @@ def format_value(value, kind):
     if kind == "pct":
         return f"{value * 100:5.1f} %"
     if kind == "sec":
-        return f"{value:5.1f} 초"
+        return f"{value:5.2f} 초"
     if kind == "count":
         return f"{int(value):5d} 개"
     return f"{value:5.2f} 회"
