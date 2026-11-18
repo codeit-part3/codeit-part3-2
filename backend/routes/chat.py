@@ -29,7 +29,7 @@ async def chat(request: ChatRequest):
 
     # 응답 생성
     try:
-        answer = engine_fn(request.message, history)
+        answer = engine_fn.invoke({"question": request.message, "history": history})
         # 현재 대화를 history에 저장
         add_turn(request.session_id, request.message, answer)
 

@@ -1,8 +1,19 @@
+from contextlib import asynccontextmanager
+
 from fastapi import FastAPI
 
 from backend.routes import chat
+from backend.services.engine_loader import load_engine
 
-app = FastAPI()
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # 서버 시작 시 graph warmup
+    load_engine("local_model")
+    yield
+
+
+app = FastAPI(lifespan=lifespan)
 
 app.include_router(chat.router)
 

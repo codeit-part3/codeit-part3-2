@@ -44,13 +44,7 @@ FORCE_LIGHT_JS = """
 """
 
 # (engine_id, 탭 이름, 소개). engine_id 는 백엔드 config.ENGINE_IDS 와 글자까지 같아야 합니다.
-ENGINES = [
-    ("temp1", "temp1", "임시 엔진 1"),
-    ("temp2", "temp2", "임시 엔진 2"),
-    ("temp3", "temp3", "임시 엔진 3"),
-    ("temp4", "temp4", "임시 엔진 4"),
-    ("temp5", "temp5", "임시 엔진 5"),
-]
+ENGINES = [("local_model", "local_model", "gemma4:3b 기반 로컬 모델")]
 
 
 def call_backend(engine_id: str, session_id: str, message: str) -> str:

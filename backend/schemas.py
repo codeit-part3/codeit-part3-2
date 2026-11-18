@@ -16,7 +16,7 @@ class ChatRequest(BaseModel):
     model_config = SHARED_CONFIG
 
     engine_id: Annotated[
-        str, Field(description="요청할 엔진의 ID(configs.ENGINE_IDS 중 하나)")
+        str, Field(description="요청할 엔진의 ID(backend.config.ENGINE_IDS 중 하나)")
     ]
     session_id: Annotated[
         str,
