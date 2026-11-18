@@ -12,7 +12,8 @@ evaluate.py 를 실행하면 끝에서 자동으로 불린다. (끄려면 evalua
 - hallucination (예/아니오): 정답과 모순되는 수치나 조건을 단정했는가 (낮을수록 좋음)
 - refusal       (예/아니오): 답 없는 문항(no_answer)에서 지어내지 않고 모른다고 했는가
 
-필요한 것: .env 에 GROQ_API_KEY (기본 채점 모델이 Groq 이므로)
+필요한 것: .env 에 OPENAI_API_KEY (기본 채점 모델이 OpenAI 이므로)
+Groq 로 채점하려면: --judge-provider groq --judge-model openai/gpt-oss-120b (.env 에 GROQ_API_KEY)
 
 무료 한도 대응
 - 한도 오류가 나면 서버가 알려 준 시간만큼 기다렸다가 같은 문항을 다시 채점
@@ -35,8 +36,8 @@ from dotenv import load_dotenv
 BASE_DIR = Path(__file__).parent
 load_dotenv(BASE_DIR / ".env")
 
-DEFAULT_PROVIDER = "groq"
-DEFAULT_MODEL = "openai/gpt-oss-120b"
+DEFAULT_PROVIDER = "openai"
+DEFAULT_MODEL = "gpt-5-nano-2025-08-07"
 CACHE_PATH = BASE_DIR / "outputs" / "judge_cache.json"
 KEY_NAMES = {"groq": "GROQ_API_KEY", "openai": "OPENAI_API_KEY"}  # ollama 는 키 없음
 JUDGE_VERSION = "v2"  # 채점 지침을 바꾸면 올림 (예전 채점 결과를 재사용하지 않게)
@@ -112,6 +113,9 @@ def make_judge_model(provider, model):
         return init_chat_model(
             model, model_provider="ollama", base_url=url, temperature=0
         )
+    if provider == "openai":
+        # gpt-5 계열은 temperature 를 기본값(1)만 허용해서 0 을 넣으면 오류가 남 -> 넣지 않음
+        return init_chat_model(model, model_provider="openai")
     return init_chat_model(model, model_provider=provider, temperature=0)
 
 
@@ -330,7 +334,8 @@ def judge_file(
                     "not found" in str(e).lower() or "does not exist" in str(e).lower()
                 ):
                     print(
-                        "  채점 모델 이름을 확인하세요. Groq 는 https://console.groq.com/docs/models"
+                        "  채점 모델 이름을 확인하세요. OpenAI 는 https://platform.openai.com/docs/models"
+                        ", Groq 는 https://console.groq.com/docs/models"
                     )
                 continue
             scores = parse_scores(text)
