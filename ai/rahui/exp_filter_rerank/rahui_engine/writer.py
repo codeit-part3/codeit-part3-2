@@ -56,7 +56,9 @@ CORPUS_DIR = ROOT / "data" / config.CORPUS
 OUT_DIR = ROOT / "outputs" / "guides"
 
 # 모델에게 줄 지시문 파일 이름 (rahui_engine/prompts/<이름>.txt). 바꾸면 항목별 안내문의 형식과 말투가 달라진다.
-GUIDE_PROMPT = "guide_v2"
+GUIDE_PROMPT = "guide_v3"
+# 코드 안의 few-shot·필터 규칙이 바뀌면 올린다 (캐시 키에 들어가서 옛 캐시를 쓰지 않게 한다).
+GUIDE_VERSION = "3.2"
 USE_MODEL = True  # False 면 모델 없이 규칙만으로 만든 초안
 PARALLEL = max(
     1, int(os.environ.get("WRITER_PARALLEL", "1"))
@@ -66,6 +68,8 @@ MAX_MODEL_ITEMS = 25  # 항목이 이보다 많으면 앞쪽만 모델로 쓰고
 
 # 표에서 "합계 줄"로 보는 말. 공백을 없앤 칸이 이 중 하나와 똑같으면 합계 줄이다 (항목이 아니라 검산용으로만 쓴다).
 TOT = ("계", "소계", "합계", "총계", "총점")
+# "계량 합계", "정성평가 소계", "총 합계"처럼 앞말이 붙은 합계 줄 (앞말은 8글자까지). 항목이 아니라 합계다.
+SUBTOTAL = re.compile(r"[가-힣A-Za-z0-9()·]{0,8}(?:합계|소계|총계|총점)\d?\)?")
 MIN_FULL_SUM = 70  # 평가표 전체로 보려면 항목 배점 합이 이 값 이상이어야 함 (정량 20점 등 일부 표를 확정으로 오판하지 않기 위해)
 # 머리글에 이 말이 하나라도 있어야 평가표로 인정한다 ("배점" 열도 함께 있어야 한다).
 KEY = ("항목", "평가요소", "평가기준", "평가부문", "평가내용", "평가지표", "구분")
@@ -304,6 +308,12 @@ def parse_table(block: str):
         if any(sq(c) in TOT for c in cells):
             total = v
             continue
+        # 앞말이 붙은 합계 줄("계량 합계 | 10")도 항목이 아니다. "총"이 붙은 것은 전체 합계로 저장하고 나머지는 건너뛴다.
+        sub_labels = [sq(c) for c in cells if SUBTOTAL.fullmatch(sq(c))]
+        if sub_labels:
+            if any("총" in x for x in sub_labels):
+                total = v
+            continue
         # 대분류(평가부문) 칸이 비어 있으면 윗줄 값을 계속 쓴다 (병합 셀은 첫 줄에만 값이 있다).
         g = cell(group)
         if g and g.strip():
@@ -369,7 +379,43 @@ def merge_rows(items: list[dict]) -> list[dict]:
     return out
 
 
+# "전략 및 방법론 (20)"처럼 평가부문(대분류) 이름이 항목 이름 자리에 들어오고, 진짜 항목 이름은 평가기준 칸에
+# 짧게("사업 이해도") 들어 있는 표가 있다 (머리글 칸 수가 줄 칸 수보다 적은 4단 표). 그런 경우 이름과 대분류를 바로잡는다.
+_GROUP_NUM = re.compile(r"^(.*?)\s*\(\s*\d+(?:\.\d+)?\s*\)\s*$")
+_BULLET = "․·ㆍ•ㅇ○-"
+
+
+def _fix_group_name(it: dict) -> dict:
+    m = _GROUP_NUM.match(it.get("name") or "")
+    if not m:
+        return it
+    crit = (it.get("criteria") or "").lstrip(" \t" + _BULLET).strip()
+    # 짧은 이름 꼴("사업 이해도")만 항목 이름으로 인정한다. 문장(끝이 ~다/함/음/가, 마침표 등)이면 평가기준 설명이므로 그대로 둔다.
+    if not (2 <= len(crit) <= 14) or re.search(
+        r"[.?!]|(?:다|함|음|임|요|가|까)$", crit
+    ):
+        return it
+    if sq(crit) == sq(m.group(1)) or _GROUP_NUM.match(crit):
+        return it
+    return {
+        **it,
+        "group": it.get("group") or m.group(1).strip(),
+        "name": crit,
+        "criteria": it.get("elements") or "",
+    }
+
+
 def extract_items(txt: str):
+    """평가표 읽기 (이름·대분류 바로잡기 포함). 본체는 _extract_items_raw."""
+    items, level, why = _extract_items_raw(txt)
+    items = [_fix_group_name(i) for i in items]
+    for i in items:  # 배점이 100을 넘는 것은 표를 잘못 읽은 값(예: 줄바꿈된 '(101)')이므로 점수를 비운다
+        if i.get("score") is not None and i["score"] > 100:
+            i["score"] = None
+    return items, level, why
+
+
+def _extract_items_raw(txt: str):
     """평가표 읽기. 1차(기본 규칙)로 읽고, 결과가 "부분"이면 병합 셀용 2차 읽기를 해 본다.
 
     2차 결과는 '확정'이고 항목이 5개 이상이며 1차보다 많을 때만 채택한다 (잘 읽던 공고가 나빠지지 않게 하고,
@@ -671,12 +717,17 @@ def parse_guide_json(text: str):
     if isinstance(must, str):
         must = [must]
     must = _clean_must([str(x) for x in (must or [])])
-    if not where or not must or where.startswith(_FEWSHOT_WHERE):
+    if (
+        not where
+        or not must
+        or where.startswith(_FEWSHOT_WHERE)
+        or where in _FEWSHOT_VALUES
+    ):
         return None
     if re.search(r"항목 이름을 넣어|무엇을 보여 주는 부분인지", where):
         return None
     ex = _clean_example(str(d.get("example", "")))
-    if ex.startswith("우리 회사는 행사 준비부터"):
+    if ex.startswith("우리 회사는 행사 준비부터") or ex in _FEWSHOT_VALUES:
         ex = ""
     return {
         "where": where,
@@ -736,6 +787,180 @@ def parse_guide_labels(text: str):
     }
 
 
+# ---- 재무·신용·가격 항목: 고정 문장 ----
+# 경영상태·신용평가등급·입찰가격 같은 항목은 글솜씨가 아니라 제출 서류나 산식으로 점수가 정해진다.
+# 모델에게 맡기면 "신용평가 등급을 산정하여 제출하겠습니다"처럼 어색한 조언이 나와서 고정 문장을 쓴다.
+_QUANT_FINANCE = re.compile(
+    r"경영\s*상태|재무|신용\s*평가|신용\s*도|재정\s*(?:상태|건전)"
+)
+_QUANT_PRICE = re.compile(r"입찰\s*가격|가격\s*평가|가격\s*점수")
+
+
+def _plain_name(name: str, kind: str = "finance") -> str:
+    """항목 이름에서 글머리·번호·끝의 (배점)을 떼어 낸다. 너무 길면(문장이면) 일반 이름으로 바꾼다."""
+    n = re.sub(r"^[\s\-–·ㆍ•∘◦○ㅇ․*]+", "", name or "")
+    n = re.sub(r"^(?:\d+|[가-하A-Za-z])\s*[.)]\s*", "", n)
+    n = re.sub(r"\s*\(\s*(?:\d+(?:\.\d+)?\s*점?|\*|계량)\s*\)\s*$", "", n).strip()
+    if not n or len(n) > 18:
+        return "입찰 가격" if kind == "price" else "재무·신용"
+    return n
+
+
+def quant_kind(item: dict):
+    """'finance'(재무·신용), 'price'(가격) 또는 None. 항목 이름만 본다."""
+    name = item.get("name") or ""
+    if _QUANT_PRICE.search(name):
+        return "price"
+    if _QUANT_FINANCE.search(name):
+        return "finance"
+    return None
+
+
+def quant_guide(item: dict):
+    kind = quant_kind(item)
+    if kind is None:
+        return None
+    name = _plain_name(item.get("name"), kind)
+    if kind == "price":
+        return {
+            "where": f"{name} 항목은 입찰 가격에 따라 점수가 정해지는 부분입니다.",
+            "must": [
+                "공고문의 가격 평가 산식과 기준을 확인합니다.",
+                "가격은 공고문이 정한 서식과 방법으로 제출합니다.",
+                "제안서 본문에 가격을 써도 되는지 공고문에서 확인합니다.",
+            ],
+            "example": "",
+            "tip": "가격 점수는 산식으로 정해지니, 산식과 제출 방법을 먼저 확인하세요.",
+            "mistake": "산식이나 제출 방법을 확인하지 않은 채 가격서를 내는 것입니다.",
+        }
+    return {
+        "where": f"{name} 항목은 회사의 재무 상태나 신용 등급처럼 정해진 기준으로 점수가 정해지는 부분입니다.",
+        "must": [
+            "공고문이 요구하는 재무·신용 관련 증빙 서류를 확인합니다.",
+            "서류의 기준일과 발급 조건이 공고문과 맞는지 확인합니다.",
+            "요구된 서식과 자료를 빠짐없이 제출합니다.",
+        ],
+        "example": "",
+        "tip": "이 항목은 글솜씨보다 서류로 점수가 정해지니, 제출 기한과 서류 형식을 먼저 확인하세요.",
+        "mistake": "증빙 서류의 기준일이나 발급 조건이 달라 인정받지 못하는 것입니다.",
+    }
+
+
+# ---- few-shot: 항목마다 돌아가며 다른 예를 보여 줘서 문장 틀이 한 가지로 굳지 않게 한다 ----
+FEWSHOTS = [
+    (
+        "행사 운영 계획",
+        {
+            "where": "행사 운영 계획 항목은 행사를 어떻게 준비하고 진행할지 보여 주는 부분입니다.",
+            "must": [
+                "준비 일정과 담당 인력을 설명합니다.",
+                "현장에서 문제가 생겼을 때의 대응 방법을 제시합니다.",
+                "행사 후 결과를 점검하는 방법을 보여 줍니다.",
+            ],
+            "example": "우리 회사는 행사 준비부터 마무리까지 담당자를 정해 단계별로 점검하겠습니다.",
+            "tip": "누가, 언제, 무엇을 하는지 나누어 쓰면 읽기 쉽습니다.",
+            "mistake": "계획은 길게 쓰면서 문제가 생겼을 때의 대응은 빠뜨리는 것입니다.",
+        },
+    ),
+    (
+        "견학 프로그램 운영",
+        {
+            "where": "견학 프로그램 운영 항목은 방문객이 어떤 순서로 무엇을 체험하는지 보여 주는 부분입니다.",
+            "must": [
+                "방문 대상과 인원에 맞춘 코스를 설명합니다.",
+                "안내 인력의 역할과 배치를 보여 줍니다.",
+                "안전을 위한 준비 사항을 제시합니다.",
+            ],
+            "example": "우리 회사의 견학 코스는 대상별로 나누어 이동 시간과 설명 시간을 함께 계획하겠습니다.",
+            "tip": "코스를 시간 순서로 보여 주면 평가하는 사람이 흐름을 쉽게 따라갑니다.",
+            "mistake": "안내 인력이 몇 명인지만 적고 어디에서 무엇을 하는지는 밝히지 않는 경우가 많습니다.",
+        },
+    ),
+    (
+        "전시 해설 운영",
+        {
+            "where": "전시 해설 운영 항목은 해설을 누가 어떤 방식으로 제공할지 보여 주는 부분입니다.",
+            "must": [
+                "해설 방식과 대상별 구성을 설명합니다.",
+                "해설 내용을 관리하고 고치는 절차를 제시합니다.",
+                "이용자 의견을 받아 반영하는 방법을 보여 줍니다.",
+            ],
+            "example": "우리 회사는 해설 내용을 대상별로 준비하고 이용자 의견을 받아 정기적으로 고치겠습니다.",
+            "tip": "해설을 만드는 과정과 고치는 과정을 나란히 쓰면 운영 방식이 분명해 보입니다.",
+            "mistake": "해설 내용 자체만 길게 소개하고 운영과 관리 방법은 비워 두는 일이 흔합니다.",
+        },
+    ),
+    (
+        "고객 응대 체계",
+        {
+            "where": "고객 응대 체계 항목은 문의가 들어왔을 때 어떻게 받고 해결하는지 보여 주는 부분입니다.",
+            "must": [
+                "문의를 받는 창구와 시간을 설명합니다.",
+                "문의 종류별 처리 순서를 제시합니다.",
+                "처리 결과를 확인하고 기록하는 방법을 보여 줍니다.",
+            ],
+            "example": "우리 회사는 문의 접수부터 처리 결과 안내까지 담당자를 정해 기록으로 남기겠습니다.",
+            "tip": "문의가 들어온 뒤 해결될 때까지의 순서를 한 줄씩 나열하면 이해하기 쉽습니다.",
+            "mistake": "빠르게 응대하겠다는 다짐만 있고 실제 처리 순서가 보이지 않는 것이 문제가 됩니다.",
+        },
+    ),
+]
+_FEWSHOT_VALUES = {
+    v for _t, g in FEWSHOTS for k, v in g.items() if isinstance(v, str)
+} | {m for _t, g in FEWSHOTS for m in g["must"]}
+
+
+def fewshot_text(k: int) -> str:
+    topic, g = FEWSHOTS[k % len(FEWSHOTS)]
+    return (
+        f'\n\n아래는 형식을 보여 주는 다른 항목("{topic}")의 예입니다. '
+        "내용과 문장 틀을 베끼지 말고, 주어진 평가 항목에 맞게 새로 쓰세요.\n\n"
+        + json.dumps(g, ensure_ascii=False, indent=1)
+    )
+
+
+# ---- 결과를 약속하는 표현 거르기 ----
+# "점수를 높일 수 있습니다", "좋은 점수를 받습니다" 같은 보장 투 문장은 컨설팅 문서에 맞지 않는다. 걸리면 그 칸을 비운다(팁·실수·예시)
+# 또는 그 줄을 뺀다(꼭 넣을 내용). 프롬프트로 막고도 새어 나오는 것을 코드로 한 번 더 거른다.
+PROMISE = re.compile(
+    r"점수(?:를|가|도)?\s*(?:더\s*)?(?:높|올|받|얻|확보|잘)|높은\s*(?:점수|등급|평가)|좋은\s*(?:점수|평가|결과)|만점|고득점|"
+    r"유리(?:하|합|해)|합격|선정(?:될|에)\s*(?:수|유리)|경쟁력을?\s*높"
+)
+
+
+# 회사가 쓰는 [예시] 문장이 과장되지 않도록, 단정·과장 낱말을 코드에서 뺀다 (예: "모든 위험에 대비", "철저히 점검").
+ABSOLUTE = re.compile(
+    r"(?:모든\s+|철저(?:히|하게)\s*|철저한\s+|완벽(?:히|하게)\s*|완벽한\s+|최고의\s+|최상의\s+|확실(?:히|하게)\s*|무조건\s+)"
+)
+
+
+def soften(text: str) -> str:
+    return re.sub(r"\s{2,}", " ", ABSOLUTE.sub("", text or "")).strip()
+
+
+def has_promise(text: str) -> bool:
+    return bool(PROMISE.search(text or ""))
+
+
+def drop_promises(g: dict) -> dict:
+    for fld in ("example", "tip", "mistake"):
+        if has_promise(g.get(fld, "")):
+            g[fld] = ""
+    g["must"] = [m for m in g.get("must", []) if not has_promise(m)]
+    g["example"] = soften(g.get("example", ""))
+    g["must"] = [soften(m) for m in g["must"]]
+    # 작은 모델이 '단순히 …'로 시작하는 틀을 거의 매번 쓴다. 프롬프트로 안 막히니 코드에서 앞의 '단순히 '만 뗀다.
+    g["mistake"] = re.sub(r"^\s*단순히\s+", "", g.get("mistake", ""))
+    return g
+
+
+# 모델에게 맡길 항목: 앞쪽 MAX_MODEL_ITEMS 개 중 고정 문장 항목(재무·신용·가격)을 뺀 것. (순번, 항목) 목록.
+def _model_todo(items: list[dict]) -> list:
+    return [
+        (k, i) for k, i in enumerate(items[:MAX_MODEL_ITEMS]) if quant_kind(i) is None
+    ]
+
+
 # ---- 가이드 캐시 (로컬 전용: outputs/guides/_cache, 공고문 내용이 들어 있으니 깃에 올리지 않는다) ----
 # 같은 공고문 + 같은 지시문 + 같은 모델이면 모델을 다시 돌리지 않고 저장해 둔 안내문을 쓴다. WRITER_NO_CACHE=1 이면 끈다.
 CACHE_DIR = OUT_DIR / "_cache"
@@ -752,9 +977,9 @@ def _cache_path(project: str, items: list[dict]) -> Path:
         ensure_ascii=False,
         sort_keys=True,
     )
-    h = hashlib.sha1(f"{GUIDE_PROMPT}|{config.CHAT_MODEL}|{sig}".encode()).hexdigest()[
-        :12
-    ]
+    h = hashlib.sha1(
+        f"{GUIDE_PROMPT}|{GUIDE_VERSION}|{config.CHAT_MODEL}|{sig}".encode()
+    ).hexdigest()[:12]
     safe = re.sub(r'[\\/:*?"<>|]', "_", project)[:50]
     return CACHE_DIR / f"{safe}__{h}.json"
 
@@ -775,7 +1000,7 @@ def write_guides(project: str, items: list[dict], use_model: bool):
     guides, note = _write_guides(project, items, use_model)
     if cp and note.startswith("로컬 모델"):
         m = re.search(r"(\d+)/", note)
-        want = min(len(items), MAX_MODEL_ITEMS)
+        want = len(_model_todo(items))
         if m and int(m.group(1)) >= max(
             1, int(want * 0.8)
         ):  # 대부분 성공했을 때만 저장
@@ -795,6 +1020,13 @@ def _write_guides(project: str, items: list[dict], use_model: bool):
     """
     # 1) 전부 규칙 문장으로 먼저 채운다 (안전망).
     guides = [template_guide(i) for i in items]
+    for k, i in enumerate(
+        items
+    ):  # 재무·신용·가격 항목은 고정 문장 (모델을 쓰지 않는다)
+        qg = quant_guide(i)
+        if qg:
+            guides[k] = qg
+    n_fixed = sum(1 for i in items if quant_kind(i))
     if not (use_model and USE_MODEL):
         return guides, "모델 없이 규칙만으로 작성"
     try:
@@ -820,7 +1052,9 @@ def _write_guides(project: str, items: list[dict], use_model: bool):
             f"배점: {score}\n평가기준(공고문 원문): {crit}\n평가요소: {elem or '-'}"
         )
         try:
-            r = model.invoke([SystemMessage(system), HumanMessage(msg)])
+            r = model.invoke(
+                [SystemMessage(system + fewshot_text(k)), HumanMessage(msg)]
+            )
             raw = getattr(r, "text", None) or r.content
             g = parse_guide(raw)
             # WRITER_DEBUG=1 이면 모델 원본 출력을 파일에 남겨서 파싱 실패 원인을 볼 수 있게 한다.
@@ -841,7 +1075,7 @@ def _write_guides(project: str, items: list[dict], use_model: bool):
 
     # 항목끼리는 서로 영향이 없으므로 WRITER_PARALLEL(기본 1) 개씩 동시에 요청할 수 있다.
     # 1이면 예전처럼 하나씩 차례로 쓴다. 2 이상은 Ollama 서버도 OLLAMA_NUM_PARALLEL 을 같은 값으로 켜야 실제로 빨라진다.
-    todo = list(enumerate(items[:MAX_MODEL_ITEMS]))
+    todo = _model_todo(items)
     if PARALLEL > 1 and len(todo) > 1:
         from concurrent.futures import ThreadPoolExecutor
 
@@ -862,11 +1096,17 @@ def _write_guides(project: str, items: list[dict], use_model: bool):
             ):  # 사업·시스템·기관 이름 일반화
                 g[fld] = mask_names(g.get(fld, ""), project)
             g["must"] = [mask_names(b, project) for b in g.get("must", [])]
+            g = drop_promises(g)
+            if not g[
+                "must"
+            ]:  # 보장 문장을 빼고 나니 남은 줄이 없으면 규칙 문장을 그대로 둔다
+                continue
             guides[k] = g
             done += 1
     return (
         guides,
-        f"로컬 모델 {config.CHAT_MODEL}로 {done}/{len(items)}개 항목의 안내 작성",
+        f"로컬 모델 {config.CHAT_MODEL}로 {done}/{len(items)}개 항목의 안내 작성"
+        + (f" (재무·가격 항목 {n_fixed}개는 고정 문장)" if n_fixed else ""),
     )
 
 
@@ -925,7 +1165,7 @@ def build_docx(project, level, note, items, guides, model_note, src_name, path: 
     """안내문을 .docx 로 저장한다.
 
     구성: 제목 -> 근거 수준 상자(노랑) -> 항목마다 [제목 + 항목 표(쓰는 칸/꼭 넣을 내용/[예시]/팁/흔한 실수/공고문 평가기준)]
-          -> 끝에 "이 초안의 근거와 확인할 것". 고객사에 그대로 전달할 수 있게 표 색으로 칸 종류를 구분한다.
+          -> 끝에 "작성 가이드라인 안내"(내부 근거·모델 정보는 넣지 않음). 고객사에 그대로 전달할 수 있게 표 색으로 칸 종류를 구분한다.
     """
     try:
         from docx import Document
@@ -1068,10 +1308,13 @@ def build_docx(project, level, note, items, guides, model_note, src_name, path: 
             )
 
     para("", after=6)
-    para("이 초안의 근거와 확인할 것", 12, True, "111827", after=2)
-    para(f"• 근거 문서: {src_name}", 10, after=1)
-    para(f"• 검증: {note}", 10, after=1)
-    para(f"• 작성 방식: {model_note}", 10, after=1)
+    # 사용자에게는 근거 문서 이름·검증 문구·모델 이름 같은 내부 정보를 보이지 않는다(당황스러울 수 있음). 필요한 안내만 남긴다.
+    para("작성 가이드라인 안내", 12, True, "111827", after=2)
+    para(
+        "• 이 문서는 작성 가이드라인입니다. 제출은 공고문 원본의 양식을 이용해 주세요.",
+        10,
+        after=1,
+    )
     if level in ("부분", "없음", "추정"):
         para(
             "• 확인 필요: 위 근거 수준 안내를 참고해 공고문 원문에서 평가 항목과 배점을 확인하세요.",
@@ -1771,11 +2014,8 @@ def form_example(doc_path: Path, message: str) -> str:
     if wants_form_file(message) and body:
         try:
             path = form_out_path(project, f["title"])
-            docx_footer = [
-                "범례: [예시] 가상 값 · [직접 작성] 회사 정보를 직접 입력 · [문서] 공고문에서 가져온 값",
-                f"출처: {project} · {form_label(f['no'])}",
-                "※ [예시] 값은 가상이에요. 제출 전에 우리 회사 정보로 바꿔 쓰세요. 제출은 원본 서식을 이용하세요.",
-            ]
+            # 문서 맨 위 안내문에 같은 설명이 있으니, 아래쪽 범례·출처·경고 줄은 넣지 않는다.
+            docx_footer: list[str] = []
             build_form_docx(
                 project,
                 f"[{form_label(f['no'])}] {f['title']}",
@@ -2039,6 +2279,55 @@ def _pick_ok(state, q: str) -> bool:
         return True
 
 
+# ---- 인사·감사·도움말: 모델 없이 정해진 문장으로 바로 답한다 (공고 검색으로 흘러가지 않게) ----
+HELP_TEXT = (
+    "입찰 공고문(RFP)을 바탕으로 이런 일을 도와드려요.\n"
+    '1. 공고문 질문: 예산, 일정, 자격 요건 등을 물어보세요. (예: "A 사업 예산이 얼마야?")\n'
+    '2. 제안서 작성 가이드: 평가항목별로 쓸 내용을 정리해 드려요. (예: "A 사업 작성 가이드 만들어줘")\n'
+    '3. 서식 작성 예시: 별지 서식의 빈칸 작성법을 보여 드려요. (예: "A 사업 서식 예시 보여줘")\n'
+    "궁금한 공고 이름과 함께 말씀해 주세요."
+)
+_GREET = re.compile(
+    r"^(?:안녕(?:하세요|하십니까)?|하이|헬로|hello|hi|hey|반가워(?:요)?|반갑습니다|좋은\s*(?:아침|하루)(?:이에요|입니다|예요)?)"
+    r"(?:\s*(?:클로드|챗봇|봇))?[\s!.~?ㅎㅋ,]*$",
+    re.I,
+)
+_THANKS = re.compile(
+    r"^(?:고마워(?:요)?|고맙습니다|감사(?:해요|합니다|해)?|땡큐|수고(?:했어(?:요)?|하셨어요|하세요)?|잘\s*했어(?:요)?)[\s!.~?ㅎㅋ,]*$"
+)
+_HELP = re.compile(
+    r"(?:도움말|사용법|사용\s*방법|^help$|뭘\s*(?:할\s*수|해\s*줄\s*수|도와)|뭐\s*(?:할\s*수|해\s*줄\s*수|도와)|"
+    r"무엇을\s*(?:할\s*수|도와)|어떤\s*(?:기능|걸\s*할\s*수)|무슨\s*기능|(?:넌|너는|너)\s*누구|누구세요|누구야)"
+)
+# 입찰과 상관없는 가벼운 말. 입찰 낱말이 섞여 있으면 해당하지 않는다.
+_OFFTOPIC = re.compile(
+    r"점심|저녁\s*(?:뭐|메뉴)|메뉴\s*추천|날씨|심심|농담|노래\s*(?:추천|불러)|로또"
+)
+_BID_WORDS = re.compile(
+    r"공고|사업|입찰|제안|평가|서식|예산|가이드|초안|용역|기관|계약|과업|배점|일정|자격|사업자|rfp",
+    re.I,
+)
+
+
+def small_talk(q: str):
+    """인사·감사·도움말·입찰과 무관한 가벼운 말이면 정해진 답을, 아니면 None. 입찰 낱말이 섞이면 None."""
+    q = (q or "").strip()
+    if not q or len(q) > 30:
+        return None
+    if _HELP.search(q) and not re.search(r"공고|사업명|예산", q):
+        return HELP_TEXT
+    if _GREET.match(q):
+        return (
+            "안녕하세요! 입찰 공고문 질문, 제안서 작성 가이드, 서식 작성 예시를 도와드려요.\n"
+            '궁금한 공고 이름과 함께 말씀해 주세요. 무엇을 할 수 있는지 궁금하시면 "도움말"이라고 입력해 보세요.'
+        )
+    if _THANKS.match(q):
+        return "도움이 되었다니 다행이에요. 다른 공고나 항목도 궁금하시면 편하게 말씀해 주세요."
+    if _OFFTOPIC.search(q) and not _BID_WORDS.search(q):
+        return "저는 입찰 공고문 관련 질문(공고 내용, 작성 가이드, 서식 예시)만 도와드릴 수 있어요. 궁금한 공고가 있으면 말씀해 주세요."
+    return None
+
+
 def route(state) -> str:
     """질문을 어느 길로 보낼지 정한다 -> "guide" | "form" | "rag".
 
@@ -2049,6 +2338,8 @@ def route(state) -> str:
       4) 서식 단어가 있으면 서식.  5) 가이드 관련 단어가 있으면 가이드.  6) 그 외는 일반 질문(rag).
     """
     q = state["question"]
+    if small_talk(q) is not None:  # 인사·도움말은 모델·검색 없이 바로 답한다
+        return "chat"
     last = _last_assistant(state.get("history"))
     if (
         ASK_MARK in last
@@ -2197,6 +2488,11 @@ def n_rag(state: GuideState):
     return {"answer": ans}
 
 
+def n_chat(state: GuideState):
+    """인사·감사·도움말 고정 답변 (모델 호출 없음)"""
+    return {"answer": small_talk(state["question"]) or HELP_TEXT}
+
+
 def build_graph():
     """랭그래프를 만든다.
 
@@ -2215,6 +2511,7 @@ def build_graph():
         ("write", n_write),
         ("build", n_build),
         ("rag", n_rag),
+        ("chat", n_chat),
         ("form", n_form),
         ("budget_ask", n_budget_ask),
         ("budget", n_budget),
@@ -2227,6 +2524,7 @@ def build_graph():
             "guide": "find_doc",
             "form": "form",
             "rag": "rag",
+            "chat": "chat",
             "budget_ask": "budget_ask",
             "budget": "budget",
         },
@@ -2246,6 +2544,7 @@ def build_graph():
     g.add_edge("write", "build")
     g.add_edge("build", END)
     g.add_edge("rag", END)
+    g.add_edge("chat", END)
     g.add_edge("budget_ask", END)
     g.add_edge("budget", END)
     return g.compile()
@@ -2670,9 +2969,12 @@ def chat():
         ]
 
 
-def precompute(limit: int | None = None):
-    """공고문 전체의 가이드를 미리 만들어 캐시에 저장한다 (이미 있으면 건너뜀). 터미널: --precompute [N]"""
-    files = sorted(CORPUS_DIR.glob("*.txt"))[: limit or None]
+def precompute(limit: int | None = None, only: list[str] | None = None):
+    """공고문 전체의 가이드를 미리 만들어 캐시에 저장한다 (이미 있으면 건너뜀). 터미널: --precompute [N] [--only 낱말 ...]"""
+    files = sorted(CORPUS_DIR.glob("*.txt"))
+    if only:  # 공고 이름에 낱말이 하나라도 들어 있는 것만 (작은 시험용)
+        files = [f for f in files if any(o in f.stem for o in only)]
+    files = files[: limit or None]
     t0 = time.time()
     for n, f in enumerate(files, 1):
         try:
@@ -2742,9 +3044,15 @@ if __name__ == "__main__":
         default=None,
         help="공고문 전체(또는 앞 N개) 가이드를 미리 만들어 캐시에 저장",
     )
+    ap.add_argument(
+        "--only",
+        nargs="*",
+        default=None,
+        help="--precompute 와 함께: 이름에 이 낱말이 들어간 공고만 (시험용)",
+    )
     a = ap.parse_args()
     if a.precompute is not None:
-        precompute(a.precompute or None)
+        precompute(a.precompute or None, a.only)
         raise SystemExit(0)
     if a.guides is not None:
         run_guide_check(a.guides, use_model=not a.no_model)
