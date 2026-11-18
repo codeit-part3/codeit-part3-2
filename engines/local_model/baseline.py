@@ -34,6 +34,7 @@ EMBED_MODEL = config.EMBED_MODEL
 NUM_CTX = config.NUM_CTX
 TEMPERATURE = config.TEMPERATURE
 SEED = config.SEED
+THINK = config.THINK
 
 CHUNK_SIZE = config.CHUNK_SIZE
 CHUNK_OVERLAP = config.CHUNK_OVERLAP
@@ -156,6 +157,7 @@ def current_settings(engine=None):
         "chunk_overlap": CHUNK_OVERLAP,
         "top_k": TOP_K,
         "num_ctx": NUM_CTX,
+        "think": THINK,
         "search": "exact" if EXACT_SEARCH else "hnsw",
     }
     if engine == "rag":
@@ -275,10 +277,12 @@ def make_chat_model():
         base_url=OLLAMA_URL,
         temperature=TEMPERATURE,
         seed=SEED,
+        reasoning=THINK,  # 생각 모드 (config.py 의 THINK)
         num_ctx=NUM_CTX,
     )
 
 
+GET_BATCH = 5000  # 정확 검색용으로 DB 에서 한 번에 불러올 조각 수 (Chroma 내부 한도 32,766 보다 작게)
 _resources = {}  # 모델과 벡터 DB 를 한 번만 만들어 재사용하기 위한 보관함
 
 
@@ -302,16 +306,27 @@ def get_exact_index():
     """정확한 검색용: 저장된 조각 임베딩과 내용을 한 번만 메모리에 올려 재사용"""
     if "exact" not in _resources:
         _, vector_store = get_resources()
-        data = vector_store._collection.get(
-            include=["embeddings", "documents", "metadatas"]
-        )
-        matrix = np.asarray(data["embeddings"], dtype=np.float32)
-        docs = [
-            Document(page_content=text, metadata=meta or {})
-            for text, meta in zip(data["documents"], data["metadatas"], strict=True)
-        ]
+        # 한 번에 모두 불러오면 조각이 32,766개를 넘을 때 Chroma 내부 한도 오류
+        # ("too many SQL variables")가 나서 GET_BATCH 개씩 나눠 불러옴 (순서는 그대로)
+        collection = vector_store._collection
+        parts, docs = [], []
+        for offset in range(0, collection.count(), GET_BATCH):
+            data = collection.get(
+                include=["embeddings", "documents", "metadatas"],
+                limit=GET_BATCH,
+                offset=offset,
+            )
+            parts.append(np.asarray(data["embeddings"], dtype=np.float32))
+            docs.extend(
+                Document(page_content=text, metadata=meta or {})
+                for text, meta in zip(data["documents"], data["metadatas"], strict=True)
+            )
+        matrix = np.vstack(parts)
         _resources["exact"] = (matrix, docs)
     return _resources["exact"]
+
+
+SEARCH_TIMES = []  # search() 를 부를 때마다 걸린 초 (evaluate.py 가 문항마다 비우고 더해서 search_sec 로 기록)
 
 
 def search(query, k=None):
@@ -319,16 +334,19 @@ def search(query, k=None):
 
     rag 검색 노드, agent 검색 도구, retrieval.py 가 모두 이 함수를 쓴다.
     """
+    start = time.time()
     k = k or TOP_K
     _, vector_store = get_resources()
     if not EXACT_SEARCH:
-        return vector_store.similarity_search_with_score(query, k=k)
-
-    matrix, docs = get_exact_index()
-    q = np.asarray(vector_store.embeddings.embed_query(query), dtype=np.float32)
-    dist = ((matrix - q) ** 2).sum(axis=1)  # Chroma 의 l2 와 같은 거리 (제곱 거리)
-    top = np.argsort(dist, kind="stable")[:k]  # 거리가 같으면 저장 순서대로
-    return [(docs[i], float(dist[i])) for i in top]
+        result = vector_store.similarity_search_with_score(query, k=k)
+    else:
+        matrix, docs = get_exact_index()
+        q = np.asarray(vector_store.embeddings.embed_query(query), dtype=np.float32)
+        dist = ((matrix - q) ** 2).sum(axis=1)  # Chroma 의 l2 와 같은 거리 (제곱 거리)
+        top = np.argsort(dist, kind="stable")[:k]  # 거리가 같으면 저장 순서대로
+        result = [(docs[i], float(dist[i])) for i in top]
+    SEARCH_TIMES.append(time.time() - start)
+    return result
 
 
 def history_to_messages(history):

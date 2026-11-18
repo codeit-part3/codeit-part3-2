@@ -24,7 +24,7 @@ import evaluate
 from engines.local_model import baseline
 
 EMBED_METHOD = "ollama"  # 임베딩 방식 (선택 옵션은 다음 작업에서 추가)
-SHEET_METRICS = ("hit_rate", "mrr", "context_hit")
+SHEET_METRICS = ("hit_rate", "mrr", "context_hit", "search_sec")
 
 
 def chunk_count():
@@ -115,6 +115,7 @@ def log_rows_to_sheet(rows, name, memo, tab):
     from common.sheet_log import log_experiment
 
     for row in rows:
+        metrics = {k: row[k] for k in SHEET_METRICS if row[k] is not None}
         params = {  # 시트 experiment 칸에 글자로 들어감 (열이 없어도 기록이 남음)
             "engine": "retrieval",
             "corpus": row["corpus"],
@@ -129,7 +130,7 @@ def log_rows_to_sheet(rows, name, memo, tab):
         log_experiment(
             name=f"{name}_cs{row['chunk_size']}_ov{row['chunk_overlap']}_k{row['top_k']}",
             memo=memo,
-            metrics={k: row[k] for k in SHEET_METRICS if row[k] is not None},
+            metrics=metrics,
             params=params,
             tab=tab,
             extra={
