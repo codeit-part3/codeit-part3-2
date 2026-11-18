@@ -2311,6 +2311,18 @@ _HELP = re.compile(
 _OFFTOPIC = re.compile(
     r"점심|저녁\s*(?:뭐|메뉴)|메뉴\s*추천|날씨|심심|농담|노래\s*(?:추천|불러)|로또"
 )
+# 뜻 없는 추임새·막연한 말 ("음 글쎄", "몰라"): 모델에 보내면 "컨텍스트를 바탕으로 질문해 주세요" 같은 내부 용어가 나오므로 안내 문장으로 답한다.
+_FILLER = re.compile(
+    r"^(?:음+|흠+|어+|아+|으음+|글쎄(?:요)?|그냥|몰라(?:요)?|모르겠(?:어|어요|다)|잘\s*모르겠(?:어|어요|다)|뭐지|뭐더라|아무거나|ㅎㅎ+|ㅋㅋ+|[?.~]+)"
+    r"(?:[\s,.!?~]*(?:음+|흠+|어+|아+|글쎄(?:요)?|그냥|몰라(?:요)?|모르겠(?:어|어요|다)|뭐지|ㅎㅎ+|ㅋㅋ+))*[\s,.!?~]*$"
+)
+WHAT_TO_ASK = (
+    "어떤 내용이 궁금하신가요? 공고 이름과 함께 이렇게 물어보실 수 있어요.\n"
+    '1. 공고 내용: "케빈랩 사업 일정이 어떻게 돼?"\n'
+    '2. 제안서 작성 가이드: "케빈랩 작성 가이드 만들어줘"\n'
+    '3. 서식 작성 예시: "벤처기업협회 서식 예시 보여줘"\n'
+    '처음이시면 "도움말"이라고 입력해 보세요.'
+)
 _BID_WORDS = re.compile(
     r"공고|사업|입찰|제안|평가|서식|예산|가이드|초안|용역|기관|계약|과업|배점|일정|자격|사업자|rfp",
     re.I,
@@ -2329,6 +2341,8 @@ def small_talk(q: str):
             "안녕하세요! 입찰 공고문 질문, 제안서 작성 가이드, 서식 작성 예시를 도와드려요.\n"
             '궁금한 공고 이름과 함께 말씀해 주세요. 무엇을 할 수 있는지 궁금하시면 "도움말"이라고 입력해 보세요.'
         )
+    if _FILLER.match(q):
+        return WHAT_TO_ASK
     if _THANKS.match(q):
         return "도움이 되었다니 다행이에요. 다른 공고나 항목도 궁금하시면 편하게 말씀해 주세요."
     if _OFFTOPIC.search(q) and not _BID_WORDS.search(q):
@@ -2367,11 +2381,18 @@ def route(state) -> str:
     ):  # 목록 직후 이름이 여러 공고에 걸리면 그 공고들만 다시 보여 준다
         return "budget_ask"
     if (
-        "작성 예시를 볼까요" in last and _looks_like_pick(q) and _pick_ok(state, q)
+        "작성 예시를 볼까요" in last
+        and "가이드" not in q
+        and "초안" not in q
+        and _looks_like_pick(q)
+        and _pick_ok(state, q)
     ):  # 서식 목록 직후의 대답 (예: "3번", "일반현황"). 딴 질문이면 일반 질문으로
         return "form"
-    if "작성 예시예요" in last and re.search(
-        r"다른|또|다음|\d+\s*번|\d+(?:-\d+)?\s*호", q
+    if (
+        "작성 예시예요" in last
+        and "가이드" not in q
+        and "초안" not in q
+        and re.search(r"다른|또|다음|\d+\s*번|\d+(?:-\d+)?\s*호", q)
     ):
         return "form"
     if "가이드" in q or "초안" in q:
@@ -2386,7 +2407,16 @@ def route(state) -> str:
 # 노드: 질문으로 공고문을 찾는다. 못 찾으면 후보를 보여 주거나 사업명을 되묻는 답변을 만들고 그래프를 끝낸다.
 def n_find_doc(state: GuideState):
     """입력: question. 출력: doc_path 또는 사용자에게 되물을 answer (+ candidates)."""
-    p, cands = find_doc(state["question"])
+    q = state["question"]
+    # 사업명이 없는 요청: 검색이 아무 공고나 고르지 않게, 앞 대화의 사업을 쓰고 없으면 되묻는다
+    if not _tokens(q):
+        p = doc_from_history(state.get("history"))
+        if p is not None:
+            return {"doc_path": str(p)}
+        return {
+            "answer": "어느 사업의 제안서 작성 가이드를 만들까요? 기관명이나 사업명을 알려 주세요."
+        }
+    p, cands = find_doc(q)
     if p is not None:
         return {"doc_path": str(p)}
     if cands:
@@ -2482,9 +2512,170 @@ def n_form(state: GuideState):
 
 
 # 노드: 가이드·서식이 아닌 일반 질문은 팀 baseline 의 검색 답변을 그대로 쓴다.
+# ---- 사업명 없이 특정 공고의 내용을 묻는 일반 질문: 검색이 아무 공고나 고르지 않게 되묻는다 ----
+# 공고 하나의 세부 내용을 묻는 말 (일정, 자격, 평가 등)
+_PROJECT_Q = re.compile(
+    r"일정|마감|접수|기간|자격|요건|평가|배점|제출|서류|계약|과업|범위|요구|담당|문의|연락|보안|인력|하도급|예산|금액|가격|규모|발주|조건|기준|방식"
+)
+# 공고 전체를 묻는 말 (이런 질문은 사업명 없이도 정상이므로 되묻지 않는다)
+_WHOLE_Q = re.compile(
+    r"가장|전체|모든|모두|전부|각각|비교|평균|합계|몇\s*개|몇\s*곳|순위|목록|어떤\s*(?:공고|사업)|공고들|사업들"
+)
+ASK_PROJECT = "어느 사업에 대한 질문인지 알려 주세요. 기관명이나 사업명 일부(예: 평택시), 또는 번호(예: 3번)로 말씀해 주세요."
+_PFX = ASK_PROJECT[:12]
+
+
+def _project_table() -> str:
+    """공고 목록 표 (번호로 고를 수 있게 되묻는 답변 끝에 붙인다)."""
+    files = _budget_files()
+
+    def cell(t: str, n: int) -> str:
+        t = t.replace("|", "/").strip()
+        return t if len(t) <= n else t[:n] + "…"
+
+    rows = "\n".join(
+        f"| {k} | {cell(_budget_parts(p)[0], 18)} | {cell(_budget_parts(p)[1], 42)} |"
+        for k, p in enumerate(files, 1)
+    )
+    return (
+        f"\n\n<details><summary>공고 {len(files)}개 목록 보기</summary>\n\n"
+        f"| 번호 | 기관 | 사업명 |\n| --- | --- | --- |\n{rows}\n\n</details>"
+    )
+
+
+def _original_question(history) -> str:
+    """사업을 되묻기 전에 했던 원래 질문 (되묻기가 여러 번 이어져도 처음 질문)."""
+    h = list(history or [])
+    i = len(h) - 1
+
+    def is_ask(t) -> bool:
+        return t.get("role") != "user" and t.get("content", "").startswith(_PFX)
+
+    while i >= 1 and is_ask(h[i]):
+        orig = h[i - 1].get("content", "")
+        i -= 2
+        if not (i >= 0 and is_ask(h[i])):
+            return orig
+    return ""
+
+
+def _project_followup(state):
+    """직전 답변이 사업을 되묻는 말이고 이번 말이 사업명·번호만 짧게 답한 것이면 처리한다.
+    -> None(해당 없음) | {"question", "history"}(앞 질문에 사업명을 붙여 검색) | {"answer"}(다시 되묻기)"""
+    q, history = state["question"], state.get("history")
+    if not _last_assistant(history).startswith(_PFX):
+        return None
+    if len(q.strip()) > 20 or _PROJECT_Q.search(q) or _WHOLE_Q.search(q):
+        return None  # 새 질문을 다시 한 것
+    orig = _original_question(history)
+    if not orig:
+        return None
+    p = _budget_doc({"history": history}, q)
+    if p is not None:
+        return {"question": f"{_budget_label(p)} {orig}", "history": None}
+    cands = _budget_cands(q)
+    if len(cands) >= 2:
+        files = _budget_files()
+        listing = "\n".join(f"{files.index(c) + 1}. {_budget_label(c)}" for c in cands)
+        return {
+            "answer": f"어느 사업에 대한 질문인지 아직 하나로 정해지지 않았어요. 아래에서 번호로 골라 주세요.\n{listing}"
+        }
+    return {"answer": ASK_PROJECT + _project_table()}
+
+
+# ---- 공고 전체를 묻는 예산 순위 질문 ("예산이 가장 많은 사업"): 공고 정보의 사업 금액으로 모델 없이 계산한다 ----
+_RANK_Q = re.compile(
+    r"(?:예산|금액|사업비|사업\s*금액).*(?:가장|제일|최대|최소|많|큰|높|적|작|낮|비싼|상위|하위|순위)"
+    r"|(?:가장|제일|최대|최소|상위|하위).*(?:예산|금액|사업비)"
+)
+_AMOUNTS = None
+
+
+def _budget_amounts() -> list:
+    """[(기관, 사업명, 금액(원))] — data_list.csv 의 '사업 금액' (없거나 100만 원 미만인 공고는 뺀다)."""
+    global _AMOUNTS
+    if _AMOUNTS is None:
+        import csv
+
+        out = []
+        try:
+            with open(
+                ROOT / "data" / "data_list.csv", encoding="utf-8-sig", newline=""
+            ) as f:
+                for row in csv.DictReader(f):
+                    try:
+                        amt = int(float(row.get("사업 금액") or 0))
+                    except ValueError:
+                        continue
+                    if amt >= 1_000_000:  # 1원 같은 입력 오류 값은 뺀다
+                        out.append(
+                            (
+                                (row.get("발주 기관") or "").strip(),
+                                (row.get("사업명") or "").strip(),
+                                amt,
+                            )
+                        )
+        except OSError:
+            pass
+        _AMOUNTS = out
+    return _AMOUNTS
+
+
+def _won(n: int) -> str:
+    return f"{n:,}원" + (f" (약 {n / 1e8:.2f}억 원)" if n >= 1e8 else "")
+
+
+def rank_answer(q: str):
+    """예산이 가장 많은/적은 사업 질문이면 순위 표를 돌려준다 (아니면 None)."""
+    if not _RANK_Q.search(q):
+        return None
+    data = _budget_amounts()
+    if not data:
+        return None
+    asc = bool(re.search(r"적|작|낮|최소|하위|저렴", q)) and not re.search(
+        r"많|큰|높|최대|상위|비싼", q
+    )
+    m = re.search(r"(\d+)\s*(?:개|곳|건|위)", q)
+    n = min(int(m.group(1)), 20) if m else 3
+    ranked = sorted(data, key=lambda x: x[2], reverse=not asc)[: max(n, 1)]
+    rows = "\n".join(
+        f"| {k} | {o} | {t[:46]}{'…' if len(t) > 46 else ''} | {_won(a)} |"
+        for k, (o, t, a) in enumerate(ranked, 1)
+    )
+    head = ranked[0]
+    return (
+        f"사업 금액이 {'가장 적은' if asc else '가장 많은'} 사업은 {head[0]}의 「{head[1]}」으로 {_won(head[2])}이에요.\n\n"
+        f"| 순위 | 기관 | 사업명 | 사업 금액 |\n| --- | --- | --- | --- |\n{rows}\n\n"
+        f"공고 정보에 사업 금액이 적힌 {len(data)}개 공고 기준이에요 (금액이 비어 있거나 입력 오류인 공고는 뺐어요). 더 보려면 '상위 5개'처럼 말씀해 주세요."
+    )
+
+
+def needs_project(state) -> bool:
+    """공고 하나의 내용을 묻는데 사업명도, 앞 대화의 사업도 없는가 (모델·검색 없이 판단)."""
+    q = state["question"]
+    if not _PROJECT_Q.search(q) or _WHOLE_Q.search(q):
+        return False
+    p, cands = find_doc(q, use_search=False)
+    # 파일 이름과 겹치는 말이 있으면 사업명을 말한 것으로 본다
+    if p is not None or cands:
+        return False
+    return doc_from_history(state.get("history")) is None
+
+
 def n_rag(state: GuideState):
     """입력: question/history. baseline RAG의 답변 문자열을 그대로 answer 로 전달한다."""
     from ai.rahui.exp_filter_rerank.rahui_engine import baseline
+
+    ranked = rank_answer(state["question"])
+    if ranked:
+        return {"answer": ranked}
+    fu = _project_followup(state)
+    if fu:
+        if "answer" in fu:
+            return fu
+        state = {**state, **fu}
+    elif needs_project(state):
+        return {"answer": ASK_PROJECT + _project_table()}
 
     ans = baseline.answer(state["question"], state.get("history"))
     if not (
@@ -2493,12 +2684,22 @@ def n_rag(state: GuideState):
         ans = baseline.answer(state["question"], None)
     if not (ans or "").strip():
         ans = "답변을 만들지 못했어요. 질문을 조금 바꿔서 다시 물어봐 주세요."
+    elif (
+        re.search(r"컨텍스트.{0,20}(?:질문해|질문이 없|질문을 주)|질문이 없습니다", ans)
+        and len(ans) < 120
+    ):
+        ans = WHAT_TO_ASK  # 모델의 "컨텍스트를 바탕으로 질문해 주세요" 같은 안내는 내부 용어라 바꾼다
     return {"answer": ans}
 
 
 def n_chat(state: GuideState):
     """인사·감사·도움말 고정 답변 (모델 호출 없음)"""
-    return {"answer": small_talk(state["question"]) or HELP_TEXT}
+    q = state["question"]
+    if _FILLER.match(q.strip()) and _last_assistant(state.get("history")).startswith(
+        _PFX
+    ):  # 사업을 되묻는 중에 추임새만 오면 다시 되묻는다
+        return {"answer": ASK_PROJECT + _project_table()}
+    return {"answer": small_talk(q) or HELP_TEXT}
 
 
 def build_graph():
