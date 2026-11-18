@@ -29,14 +29,16 @@ async def chat(request: ChatRequest):
 
     # 응답 생성
     try:
-        answer = engine_fn.invoke({"question": request.message, "history": history})
+        model_resp = engine_fn.invoke({"question": request.message, "history": history})
+
         # 현재 대화를 history에 저장
-        add_turn(request.session_id, request.message, answer)
+        add_turn(request.session_id, request.message, model_resp["answer"])
 
         return ChatResponse(
             engine_id=request.engine_id,
             session_id=request.session_id,
-            answer=answer,
+            answer=model_resp["answer"],
+            retrieved=model_resp["retrieved"],
             history_length=len(history),
         )
     except Exception as e:

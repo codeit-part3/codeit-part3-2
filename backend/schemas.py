@@ -39,6 +39,7 @@ class ChatResponse(BaseModel):
         str, Field(..., min_length=1, description="요청과 같은 session_id")
     ]
     answer: Annotated[str, Field(description="엔진이 만든 답변")]
+    retrieved: Annotated[list, Field(description="검색된 조각 목록")]
     history_length: Annotated[
         int, Field(description="이번 요청 이전까지 저장된 대화 턴 수")
     ]
