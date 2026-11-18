@@ -115,6 +115,11 @@ def log_rows_to_sheet(rows, name, memo, tab):
     from common.sheet_log import log_experiment
 
     for row in rows:
+        metrics = {k: row[k] for k in SHEET_METRICS if row[k] is not None}
+        # latency_sec 칸: 여기서는 답변 생성 없이 '검색 시간'만 기록 (evaluate.py 는 검색 + 답변 시간)
+        # 같은 칸이라 비교할 때는 experiment 칸의 engine=retrieval 로 구분
+        if row["search_sec"] is not None:
+            metrics["latency_sec"] = row["search_sec"]
         params = {  # 시트 experiment 칸에 글자로 들어감 (열이 없어도 기록이 남음)
             "engine": "retrieval",
             "corpus": row["corpus"],
@@ -129,7 +134,7 @@ def log_rows_to_sheet(rows, name, memo, tab):
         log_experiment(
             name=f"{name}_cs{row['chunk_size']}_ov{row['chunk_overlap']}_k{row['top_k']}",
             memo=memo,
-            metrics={k: row[k] for k in SHEET_METRICS if row[k] is not None},
+            metrics=metrics,
             params=params,
             tab=tab,
             extra={
