@@ -1443,6 +1443,7 @@ FORM_STOP = {
     "도",
 }
 GRID_KEEP = 5  # 격자 표는 머리글 + 이 줄 수까지만 보여 주고 나머지는 생략 표시
+GRID_ALL = 25  # 표 줄이 이 수 이하인 서식은 생략하지 않고 전부 보여 준다 (줄마다 내용이 달라 생략하면 정보가 빠짐)
 FAKE_LABEL_MAX = 20  # 가상 값 규칙을 적용할 라벨의 최대 길이
 SKIP_MARK = "줄 생략)"
 # 단위만 있는 칸("명", "원", "(천원)" 등)을 알아보는 패턴. 이런 칸은 라벨이 아니다.
@@ -1717,6 +1718,7 @@ def fill_form(lines: list[str], meta: dict):
     count = {"문서": 0, "예시": 0, "작성": 0}
     header: list[str] = []
     tbl_rows, skipped, skip_idx = 0, 0, None
+    show_all = sum(1 for x in lines if "|" in x) <= GRID_ALL  # 작은 표는 생략하지 않음
     for raw in lines:
         line = raw.strip()
         if not line or line in ("[표]", "[/표]"):
@@ -1751,7 +1753,9 @@ def fill_form(lines: list[str], meta: dict):
         # 요약 줄의 숫자는 루브릭 채점(check_form_answer)이 구조 일치를 계산할 때 쓴다.
         if header:
             tbl_rows += 1
-            if tbl_rows > GRID_KEEP + 1:  # 같은 형식의 반복 줄은 생략
+            if (
+                tbl_rows > GRID_KEEP + 1 and not show_all
+            ):  # 큰 표에서 같은 형식의 반복 줄은 생략
                 skipped += 1
                 if skip_idx is None:
                     out.append("")
