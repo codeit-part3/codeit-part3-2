@@ -70,6 +70,7 @@ MAX_MODEL_ITEMS = 25  # 항목이 이보다 많으면 앞쪽만 모델로 쓰고
 TOT = ("계", "소계", "합계", "총계", "총점")
 # "계량 합계", "정성평가 소계", "총 합계"처럼 앞말이 붙은 합계 줄 (앞말은 8글자까지). 항목이 아니라 합계다.
 SUBTOTAL = re.compile(r"[가-힣A-Za-z0-9()·]{0,8}(?:합계|소계|총계|총점)\d?\)?")
+MIN_FULL_ITEMS = 5  # 확정으로 보려면 항목이 이 개수 이상이어야 함 (표를 못 읽고 합계 100 한 줄만 읽은 경우를 확정으로 오판하지 않기 위해)
 MIN_FULL_SUM = 70  # 평가표 전체로 보려면 항목 배점 합이 이 값 이상이어야 함 (정량 20점 등 일부 표를 확정으로 오판하지 않기 위해)
 # 머리글에 이 말이 하나라도 있어야 평가표로 인정한다 ("배점" 열도 함께 있어야 한다).
 KEY = ("항목", "평가요소", "평가기준", "평가부문", "평가내용", "평가지표", "구분")
@@ -412,7 +413,29 @@ def extract_items(txt: str):
     for i in items:  # 배점이 100을 넘는 것은 표를 잘못 읽은 값(예: 줄바꿈된 '(101)')이므로 점수를 비운다
         if i.get("score") is not None and i["score"] > 100:
             i["score"] = None
-    return items, level, why
+    return _downgrade_thin_full(items, level, why)
+
+
+def _downgrade_thin_full(items, level, why):
+    """확정인데 항목이 너무 적거나 이름 없는 항목이 있으면 '부분'으로 낮추고 확인하라고 알린다.
+
+    근거: 한국해양조사협회(원본 17항목)가 '(이름 없음) 100점' 1개만 읽고도 합계 100 이라 확정이 됐다.
+    항목이 적은 정상 평가표를 부분으로 낮추는 비용(불필요한 확인 안내)보다 틀린 확정을 그대로 두는 비용이 더 크다.
+    """
+    if level != "확정":
+        return items, level, why
+    unnamed = any(
+        not (i.get("name") or "").strip() or "이름 없음" in (i.get("name") or "")
+        for i in items
+    )
+    if len(items) >= MIN_FULL_ITEMS and not unnamed:
+        return items, level, why
+    why += (
+        f" 읽은 항목이 {len(items)}개뿐이라 평가표 일부만 읽었을 수 있어요(공고문 평가표를 꼭 확인하세요)."
+        if len(items) < MIN_FULL_ITEMS
+        else " 이름을 읽지 못한 항목이 있어 평가표를 정확히 읽지 못했을 수 있어요(공고문 평가표를 꼭 확인하세요)."
+    )
+    return items, "부분", why
 
 
 def _extract_items_raw(txt: str):
