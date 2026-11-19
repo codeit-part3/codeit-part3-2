@@ -25,3 +25,6 @@ outputs/
 .idea/
 .DS_Store
 Thumbs.db
+
+# 모델로 읽고 검산한 평가표 (공고문에서 나온 값, 팀 내부로만 공유)
+ai/rahui/exp_filter_rerank/rahui_engine/verified_tables.json

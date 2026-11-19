@@ -406,8 +406,53 @@ def _fix_group_name(it: dict) -> dict:
     }
 
 
-def extract_items(txt: str):
-    """평가표 읽기 (이름·대분류 바로잡기 포함). 본체는 _extract_items_raw."""
+# 오프라인에서 모델로 읽고 합계 검산을 통과한 평가표 (scripts/build_verified_tables.py 로 만든다).
+# 공고 파일명 -> 항목 목록. 있으면 규칙 추출보다 먼저 쓴다. 파일이 없으면 기존 규칙 추출 그대로다.
+VERIFIED_PATH = Path(__file__).with_name("verified_tables.json")
+_VERIFIED: dict | None = None
+
+
+def _verified_tables() -> dict:
+    global _VERIFIED
+    if _VERIFIED is None:
+        try:
+            _VERIFIED = json.loads(VERIFIED_PATH.read_text(encoding="utf-8"))
+        except (OSError, ValueError):
+            _VERIFIED = {}
+    return _VERIFIED
+
+
+def _verified_items(txt: str, name: str):
+    """검증된 평가표가 있으면 (items, 확정, 설명), 없으면 None. 평가기준 설명은 규칙 추출 결과에서 이름이 같은 항목의 것을 가져온다."""
+    v = _verified_tables().get(name)
+    if not v:
+        return None
+    rule_items, _lv, _why = _extract_items_raw(txt)
+    by_name = {re.sub(r"\s+", "", i.get("name") or ""): i for i in rule_items}
+    items = []
+    for it in v["items"]:
+        ref = by_name.get(re.sub(r"\s+", "", it["name"]), {})
+        items.append(
+            {
+                "group": ref.get("group") or it.get("group") or "",
+                "name": it["name"],
+                "score": it["score"],
+                "criteria": ref.get("criteria") or it.get("criteria") or "",
+                "elements": ref.get("elements") or it.get("elements") or "",
+            }
+        )
+    total = sum(i["score"] or 0 for i in items)
+    return (
+        items,
+        "확정",
+        f"사전에 검증된 평가표입니다. 항목 배점 합이 {total:g}점입니다.",
+    )
+
+
+def extract_items(txt: str, name: str = ""):
+    """평가표 읽기 (이름·대분류 바로잡기 포함). 본체는 _extract_items_raw. name 은 공고 파일명(검증된 평가표 조회용)."""
+    if name and (hit := _verified_items(txt, name)):
+        return hit
     items, level, why = _extract_items_raw(txt)
     items = [_fix_group_name(i) for i in items]
     for i in items:  # 배점이 100을 넘는 것은 표를 잘못 읽은 값(예: 줄바꿈된 '(101)')이므로 점수를 비운다
@@ -1373,7 +1418,7 @@ def make_guide(doc_path: Path, use_model=True):
     """
     txt = doc_path.read_text(encoding="utf-8", errors="replace")
     project = doc_path.stem
-    items, level, note = extract_items(txt)
+    items, level, note = extract_items(txt, doc_path.name)
     if not items:
         items = [
             {"group": "", "name": n, "score": None, "criteria": c, "elements": ""}
@@ -2456,7 +2501,7 @@ def n_find_doc(state: GuideState):
 def n_extract(state: GuideState):
     """입력: doc_path. 출력: 공고문에서 추출한 items, 근거 수준 level, 검산 설명 note."""
     txt = Path(state["doc_path"]).read_text(encoding="utf-8", errors="replace")
-    items, level, note = extract_items(txt)
+    items, level, note = extract_items(txt, Path(state["doc_path"]).name)
     return {"items": items, "level": level, "note": note}
 
 
@@ -2969,7 +3014,9 @@ def run_guide_check(n: int = 8, use_model: bool = True):
 
     ok, none = [], []
     for p in sorted(CORPUS_DIR.glob("*.txt")):
-        items, level, _ = extract_items(p.read_text(encoding="utf-8", errors="replace"))
+        items, level, _ = extract_items(
+            p.read_text(encoding="utf-8", errors="replace"), p.name
+        )
         (ok if items else none).append((p, items, level))
     rnd = random.Random(1118)
     picked = rnd.sample(ok, min(n - 1, len(ok))) + rnd.sample(none, min(1, len(none)))
@@ -3211,7 +3258,7 @@ def precompute(limit: int | None = None, only: list[str] | None = None):
     for n, f in enumerate(files, 1):
         try:
             txt = f.read_text(encoding="utf-8", errors="replace")
-            items, _lv, _nt = extract_items(txt)
+            items, _lv, _nt = extract_items(txt, f.name)
             if not items:
                 items = [
                     {
