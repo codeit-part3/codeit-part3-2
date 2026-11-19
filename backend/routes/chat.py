@@ -12,7 +12,7 @@ router = APIRouter(prefix="/chat", tags=["chat"], dependencies=[Depends(compare_
 
 
 @router.post("/", response_model=ChatResponse)
-async def chat(request: ChatRequest):
+def chat(request: ChatRequest):
     """서버와 통신"""
 
     # 엔진 로딩

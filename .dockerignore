@@ -1,0 +1,14 @@
+.venv/
+.github/
+.gitignore
+.env
+__pycache__/
+data/
+.dockerignore
+Dockerfile
+compose.yaml
+.ruff_cache/
+outputs/
+.pre-commit-config.yaml
+.python-version
+indexes/
