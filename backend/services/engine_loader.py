@@ -1,23 +1,46 @@
 # backend/services/engine_loader.py
-def load_engine(engine_id: str):
+import asyncio
+import importlib
+
+from fastapi import HTTPException, status
+from loguru import logger
+
+from backend.config import is_valid_engine
+
+_engine_tasks: dict[str, asyncio.Task] = {}
+
+
+async def get_engine(engine_id: str):
+    module = importlib.import_module(f"engines.{engine_id}.baseline")
+    await asyncio.to_thread(module.warmup)
+
+    return module.get_graph()
+
+
+async def load_engine(engine_id: str):
     """
-    ***현재는 테스트 함수를 반환합니다.***
-
-    엔진 폴더가 있는데 내부에서 오류가 나면 테스트 응답으로 넘어가지 않고
-    오류를 그대로 보여 주도록 했습니다. (문제를 놓치지 않기 위해서입니다.)
+    엔진 로딩 Task를 캐시합니다. 동시에 들어온 요청도 같은 Task를 기다립니다.
+    로딩이 실패하면 캐시에서 제거하여 다음 요청에서 다시 시도하게 합니다.
     """
+    if not is_valid_engine(engine_id):
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="유효하지 않은 engine_id입니다.",
+        )
 
-    # 실사용 함수
-    # if not is_valid_engine(engine_id):
-    #         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND,
-    #                             detail='유효하지 않은 engine_id입니다.')
+    if engine_id not in _engine_tasks:
+        _engine_tasks[engine_id] = asyncio.create_task(get_engine(engine_id))
 
-    # module = importlib.import_module(f"engines.{engine_id}")
+    task = _engine_tasks[engine_id]
 
-    # return module.answer
+    try:
+        return await task
 
-    # test용 함수
-    def stub(message, history):
-        return f"[{engine_id} 엔진 · 테스트 응답] 받은 질문: {message}"
-
-    return stub
+    except Exception as e:
+        # 실패한 Task는 제외하여 다음 요청에서 다시 로딩하게 합니다.
+        if _engine_tasks.get(engine_id) is not None:
+            del _engine_tasks[engine_id]
+        logger.exception(f"{engine_id} 엔진을 로딩하는 데 실패했습니다")
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail="엔진 로딩 실패"
+        ) from e
