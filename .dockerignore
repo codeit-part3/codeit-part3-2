@@ -11,4 +11,3 @@ compose.yaml
 outputs/
 .pre-commit-config.yaml
 .python-version
-indexes/

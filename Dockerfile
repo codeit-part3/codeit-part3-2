@@ -23,6 +23,7 @@ RUN uv sync --frozen --no-dev
 # copy directoriies
 COPY backend/ ./backend/
 COPY engines/ ./engines/
+COPY indexes/ ./indexes/
 
 # expose a port
 EXPOSE ${PORT_NUM}

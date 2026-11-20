@@ -1,6 +1,7 @@
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
+from loguru import logger
 
 from backend.routes import chat
 from backend.services.engine_loader import load_engine
@@ -9,7 +10,9 @@ from backend.services.engine_loader import load_engine
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # 서버 시작 시 graph warmup
-    load_engine("local_model")
+    logger.info("[엔진 로딩 시작]")
+    await load_engine("local_model")
+    logger.info("[엔진 로딩 완료]")
     yield
 
 
