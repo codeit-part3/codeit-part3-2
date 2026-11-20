@@ -1,0 +1,29 @@
+/* 답변을 기다리는 동안 보이는 점 3개: 왼쪽부터 차례로 통통 튑니다 (도 → 레 → 미).
+   점마다 시작 시간을 조금씩 늦추고(--delay), 튀어 오르는 높이를 조금씩 높입니다(--h).
+   style.css 에는 "움직임 줄이기" 설정일 때 모든 애니메이션을 끄는 규칙(animation: none !important)이 있어서,
+   이 점들만 !important 로 다시 켭니다. 움직임은 작은 크기(3~5px)로 짧게만 튑니다. */
+.bounce-dots {
+    display: inline-flex;
+    align-items: flex-end;
+    gap: 4px;
+    height: 14px;
+    padding: 1px 2px 1px;
+}
+
+.bounce-dots span {
+    width: 3px;
+    height: 3px;
+    border-radius: 50%;
+    background: #6c6c70;
+    animation: dot-hop 1.2s ease-in-out infinite !important;
+    animation-delay: var(--delay, 0s) !important;
+}
+
+.bounce-dots .d1 { --h: -3px;  --delay: 0s;    }
+.bounce-dots .d2 { --h: -4px;  --delay: 0.16s; }
+.bounce-dots .d3 { --h: -5px;  --delay: 0.32s; }
+
+@keyframes dot-hop {
+    0%, 55%, 100% { transform: translateY(0); }
+    25%           { transform: translateY(var(--h)); }
+}
