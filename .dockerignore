@@ -3,7 +3,6 @@
 .gitignore
 .env
 __pycache__/
-data/
 .dockerignore
 Dockerfile
 compose.yaml
