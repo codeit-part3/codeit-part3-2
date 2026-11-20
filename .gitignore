@@ -15,6 +15,8 @@ __pycache__/
 /indexes/
 *.faiss
 *.pkl
+# 가이드 기능용 검산 평가표 (공고문에서 뽑은 데이터, 내부 채널로만 공유)
+/engines/rerank_rag/verified_tables.json
 
 # Claude / AI 도구 (개인 설정과 결과물)
 .claude/settings.local.json
