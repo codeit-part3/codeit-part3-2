@@ -10,10 +10,11 @@ from pathlib import Path
 
 import gradio as gr
 import httpx
-from dotenv import get_key
+from dotenv import load_dotenv
 
+load_dotenv()
 # 서버 접속용 API KEY입니다. Request객체의 header에 포함합니다.
-X_API_KEY = get_key(dotenv_path=".env", key_to_get="X_API_KEY")
+X_API_KEY = os.getenv("X_API_KEY")
 
 APP_TITLE = "임시 제목"
 
@@ -44,13 +45,7 @@ FORCE_LIGHT_JS = """
 """
 
 # (engine_id, 탭 이름, 소개). engine_id 는 백엔드 config.ENGINE_IDS 와 글자까지 같아야 합니다.
-ENGINES = [
-    ("temp1", "temp1", "임시 엔진 1"),
-    ("temp2", "temp2", "임시 엔진 2"),
-    ("temp3", "temp3", "임시 엔진 3"),
-    ("temp4", "temp4", "임시 엔진 4"),
-    ("temp5", "temp5", "임시 엔진 5"),
-]
+ENGINES = [("local_model", "local_model", "gemma4:3b 기반 로컬 모델")]
 
 
 def call_backend(engine_id: str, session_id: str, message: str) -> str:
