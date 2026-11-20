@@ -6,7 +6,7 @@ ENGINES_IDS는 app.py의 ENGINES 목록 id와 반드시 같아야 합니다.
 
 import importlib
 
-ENGINE_IDS: tuple[str, ...] = ("temp1", "temp2", "temp3", "temp4", "temp5")
+ENGINE_IDS: tuple[str, ...] = ("local_model",)
 
 
 def is_valid_engine(engine_id: str) -> bool:
