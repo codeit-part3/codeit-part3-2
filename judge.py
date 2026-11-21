@@ -23,6 +23,7 @@ Groq 로 채점하려면: --judge-provider groq --judge-model openai/gpt-oss-120
 """
 
 import argparse
+import csv
 import hashlib
 import json
 import os
@@ -44,6 +45,77 @@ JUDGE_VERSION = "v2"  # 채점 지침을 바꾸면 올림 (예전 채점 결과�
 SCORE_ITEMS = ("faithfulness", "correctness", "completeness")  # 0~2점 항목
 SHORT_WAIT_LIMIT = 60  # 이보다 짧은 대기는 바로 기다렸다가 재시도 (분당 한도)
 MAX_SHORT_RETRIES = 10
+
+# 가격 (100만 토큰당 달러: 입력, 출력). 가격이 바뀌면 여기만 고친다
+PRICES = {
+    "gpt-5-nano": (0.05, 0.40),
+    "gpt-5-mini": (0.25, 2.00),
+    "gpt-6-luna": (0.10, 0.50),
+    "gpt-6.1-terra": (1.00, 5.00),
+    "gpt-6-sol": (2.00, 10.00),
+}
+
+
+def price_of(model):
+    """날짜가 붙은 이름(gpt-5-nano-2025-08-07)도 찾아 줌. 없으면 None"""
+    for name in sorted(PRICES, key=len, reverse=True):
+        if model.startswith(name):
+            return PRICES[name]
+    return None
+
+
+def estimate_cost(model, input_tokens, output_tokens):
+    """토큰 수로 추정 비용(달러)을 계산. 가격표에 없는 모델이면 None"""
+    price = price_of(model)
+    if price is None:
+        return None
+    return (input_tokens * price[0] + output_tokens * price[1]) / 1_000_000
+
+
+USAGE_LOG = BASE_DIR / "outputs" / "token_usage.csv"
+
+
+def report_usage(provider, model, csv_path, state):
+    """이번 채점의 토큰 합계와 추정 비용을 출력하고 token_usage.csv 에 한 줄 추가"""
+    if state["calls"] == 0:
+        print("토큰 사용: 실제 호출 없음 (캐시 재사용)")
+        return
+    cost = estimate_cost(model, state["input"], state["output"])
+    cost_text = f"${cost:.4f}" if cost is not None else "가격표에 없는 모델"
+    print(
+        f"토큰 사용: 호출 {state['calls']}회 / 입력 {state['input']:,} / "
+        f"출력 {state['output']:,} / 추정 비용 {cost_text}"
+    )
+    USAGE_LOG.parent.mkdir(exist_ok=True)
+    new_file = not USAGE_LOG.exists()
+    with USAGE_LOG.open("a", encoding="utf-8-sig", newline="") as f:
+        writer = csv.writer(f)
+        if new_file:
+            writer.writerow(
+                [
+                    "time",
+                    "file",
+                    "provider",
+                    "model",
+                    "calls",
+                    "input_tokens",
+                    "output_tokens",
+                    "est_cost_usd",
+                ]
+            )
+        writer.writerow(
+            [
+                time.strftime("%Y-%m-%d %H:%M"),
+                Path(csv_path).name,
+                provider,
+                model,
+                state["calls"],
+                state["input"],
+                state["output"],
+                "" if cost is None else round(cost, 6),
+            ]
+        )
+
 
 JUDGE_PROMPT = """당신은 공공 입찰 제안요청서(RFP) 질의응답 시스템의 엄격한 채점자이다.
 아래 [문항 유형], [질문], [정답], [검색된 문서], [모델 답변]을 읽고 채점한다.
@@ -184,7 +256,7 @@ def call_with_wait(llm, prompt, wait_minutes, max_waits, state, left):
     short_tries = 0
     while True:
         try:
-            return llm.invoke(prompt).text
+            return llm.invoke(prompt)
         except Exception as e:
             if not is_rate_limit(e):
                 raise
@@ -295,7 +367,7 @@ def judge_file(
         return {}
 
     cache = load_cache()
-    state = {"long_waits": 0}
+    state = {"long_waits": 0, "input": 0, "output": 0, "calls": 0}
     todo = [i for i in df.index if df.at[i, "judge_status"] != "완료"]
     print(f"\nLLM 채점 시작: {provider} / {model} ({len(todo)}문항)")
 
@@ -312,9 +384,14 @@ def judge_file(
                 answer=row.get("answer", ""),
             )
             try:
-                text = call_with_wait(
+                response = call_with_wait(
                     llm, prompt, wait_minutes, max_waits, state, len(todo) - n
                 )
+                text = response.text
+                usage = getattr(response, "usage_metadata", None) or {}
+                state["input"] += usage.get("input_tokens", 0)
+                state["output"] += usage.get("output_tokens", 0)
+                state["calls"] += 1
             except LimitReached:
                 for j in todo[n:]:
                     df.at[j, "judge_status"] = "대기"
@@ -324,6 +401,7 @@ def judge_file(
                     f"나중에 다시 실행하면 이어서 채점합니다:\n"
                     f"  uv run python judge.py {csv_path}"
                 )
+                report_usage(provider, model, csv_path, state)
                 return summarize_judge(df)
             except Exception as e:
                 df.at[i, "judge_status"] = "실패"
@@ -362,6 +440,7 @@ def judge_file(
 
     summary = summarize_judge(df)
     print(f"LLM 채점 끝: {summary}")
+    report_usage(provider, model, csv_path, state)
     return summary
 
 
