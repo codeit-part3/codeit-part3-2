@@ -26,6 +26,7 @@ services:
       - .env
     environment:
       - HF_HOME=/root/.cache/huggingface
+      - OLLAMA_BASE_URL=http://ollama:11434
     volumes:
       - indexes:/root/app/indexes
       - guide_cache:/root/app/outputs/guides/_cache
