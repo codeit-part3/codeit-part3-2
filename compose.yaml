@@ -75,7 +75,7 @@ services:
 
     entrypoint: >
       sh -c "
-      ollama pull gemma4:2b &&
+      ollama pull gemma4:e2b &&
       ollama pull embeddinggemma
       "
 
