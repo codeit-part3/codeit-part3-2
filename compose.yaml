@@ -65,7 +65,7 @@ services:
 
   # Ollama 모델 및 임베딩 벡터 다운로드
   ollama-pull:
-    image: ollama/ollama:latest
+    image: ollama/ollama:0.40.16
     container_name: gguk-ollama-pull
     environment:
       - OLLAMA_HOST=http://ollama:11434

@@ -13,7 +13,7 @@ WORKDIR /app
 
 COPY pyproject.toml uv.lock ./
 
-RUN uv sync --frozen --no-dev
+RUN uv sync --frozen --no-dev --no-cache
 
 COPY frontend.py ./frontend.py
 COPY style.css ./style.css
