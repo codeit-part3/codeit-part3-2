@@ -35,12 +35,14 @@ X_API_KEY = os.getenv("X_API_KEY")
 
 APP_TITLE = "임시 제목"
 
-# 로컬 백엔드 서버 주소입니다.
-BACKEND_URL = os.getenv("BACKEND_URL", "http://127.0.0.1:8000")
-
-# VM 서버 연결 시 사용할 URL입니다.
+# Test용
+# 로컬 백엔드 서버 주소
+# BACKEND_URL = os.getenv("BACKEND_URL", "http://127.0.0.1:8000")
+# # VM 서버 주소
 # BACKEND_URL = os.getenv("BACKEND_URL", "http://136.111.105.21:8000")
 
+# 실사용(compose.yaml파일에서 관리)
+BACKEND_URL = os.getenv("BACKEND_URL")
 
 # 백엔드 응답을 기다리는 최대 시간(초)입니다. httpx 기본값(5초)은 LLM 답변에 너무 짧아 늘렸습니다.
 # 서버에 아예 연결이 안 될 때는 5초 안에 포기하고, 연결된 뒤 답변을 기다리는 시간만 길게 잡습니다.
@@ -367,7 +369,7 @@ if __name__ == "__main__":
         theme=gr.themes.Base(),
         css_paths=[CSS_PATH, PROGRESS_CSS_PATH],  # [수정 ⑤]
         js=FORCE_LIGHT_JS,
-        server_name=os.getenv("GRADIO_SERVER_NAME", "127.0.0.1"),
+        server_name=os.getenv("GRADIO_SERVER_NAME", "0.0.0.0"),
         server_port=int(os.getenv("GRADIO_SERVER_PORT", "7860")),
         # [수정 ⑤] outputs/guides 안의 파일을 화면에서 내려받을 수 있게 허용합니다 (그 밖의 폴더는 허용하지 않음).
         allowed_paths=[str(DOWNLOAD_DIR)],

@@ -1,33 +1,24 @@
-# Build
-# add argument
-ARG PYTHON_VERSION=3.12
-# python version
-FROM python:${PYTHON_VERSION}-slim
+# frontend
+FROM python:3.12-slim
 
-# Excute
+# install uv
+COPY --from=ghcr.io/astral-sh/uv:0.13.1 /uv /uvx /bin/
+
 # print log directly(not stacking in buffer)
 ENV PYTHONUNBUFFERED=1
-ENV PORT_NUM=8000
-# install uv
-RUN pip install --no-cache-dir uv>=0.13.1
+# not to write *.pyc
+ENV PYTHONDONTWRITEBYTECODE=1
 
-# working directory
 WORKDIR /app
 
-# copy the application code into the container
 COPY pyproject.toml uv.lock ./
 
-# install application dependencies
-RUN uv sync --frozen --no-dev
+RUN uv sync --frozen --no-dev --no-cache
 
-# copy directoriies
-COPY backend/ ./backend/
-COPY engines/ ./engines/
-COPY indexes/ ./indexes/
-COPY data/ ./data/
+COPY frontend.py ./frontend.py
+COPY style.css ./style.css
+COPY progress.css ./progress.css
 
-# expose a port
-EXPOSE ${PORT_NUM}
+EXPOSE 7860
 
-# specify the command
-CMD exec uv run uvicorn backend.main:app --port ${PORT_NUM} --host 0.0.0.0
+CMD ["uv", "run", "--no-sync", "python", "frontend.py"]

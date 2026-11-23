@@ -2,11 +2,15 @@
 .github/
 .gitignore
 .env
+.env_example
 __pycache__/
+*/__pycache__/
 .dockerignore
 Dockerfile
 compose.yaml
 .ruff_cache/
-outputs/
 .pre-commit-config.yaml
 .python-version
+ai/
+common/
+data/
