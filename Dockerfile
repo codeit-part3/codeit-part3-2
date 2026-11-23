@@ -13,6 +13,18 @@ WORKDIR /app
 
 COPY pyproject.toml uv.lock ./
 
+# hf-pull
+FROM base AS hf-pull
+
+RUN uv sync --frozen --no-dev --no-cache --group hf
+
+CMD ["uv", "run", "--no-sync" "python" "-c" "from huggingface_hub import snapshot_download; \
+    snapshot_download('BAAI/bge-reranker-v2-m3')"]
+
+
+# frontend
+FROM base AS frontend
+
 RUN uv sync --frozen --no-dev --no-cache --group frontend
 
 COPY frontend.py ./frontend.py

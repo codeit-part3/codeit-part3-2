@@ -4,6 +4,7 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
+      target: frontend
     container_name: gguk-frontend
     ports:
       - "7860:7860"
@@ -47,14 +48,11 @@ services:
   hf-pull:
     build:
       context: .
-      dockerfile: backend/Dockerfile
+      dockerfile: Dockerfile
+      target: hf-pull
     container_name: gguk-hf-pull
-    environment:
-      - HF_HOME=/root/.cache/huggingface
     volumes:
       - hf_cache:/root/.cache/huggingface
-    command: uv run --no-sync python -c "from huggingface_hub import snapshot_download;
-            snapshot_download('BAAI/bge-reranker-v2-m3')"
 
   # Ollama 로컬 모델 서빙 서비스
   ollama:
