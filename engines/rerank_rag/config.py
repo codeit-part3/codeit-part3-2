@@ -48,7 +48,7 @@ RERANK_CUTOFF = (
 )
 ADAPTIVE_TOPK = True  # True면 1~3등 유지, 4~5등은 리랭커 점수 0.5 이상일 때만 포함
 TYPO_FIX = (
-    False  # True면 검색어에서 기관명·공공입찰 용어 오타를 사전 기반으로 자동 교정
+    "query_fix"  # 검색어 오타 교정. False: 끔 / True: 팀 교정(기관명·공공입찰 용어) / "query_fix": 기관명·사업명 사전 교정 (이슈 #38)
 )
 ADAPTIVE_THINK = True  # True면 확실한 단일문서 단순 조회만 think=False(초고속), 복잡/종합 질문은 think=True
 MULTI_ENTITY_SEARCH = (
