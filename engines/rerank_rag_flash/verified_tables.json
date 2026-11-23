@@ -1,0 +1,2053 @@
+{
+ "수협중앙회_강릉어선안전조업국 상황관제시스템 구축.txt": {
+  "원문대조": true,
+  "검산": "합 100",
+  "읽은곳": "model_read_exaone_20261119_115000_항목.txt",
+  "items": [
+   {
+    "group": "",
+    "name": "경영상태",
+    "score": 5.0,
+    "criteria": "",
+    "elements": ""
+   },
+   {
+    "group": "",
+    "name": "유사용역분야 수행 실적",
+    "score": 10.0,
+    "criteria": "",
+    "elements": ""
+   },
+   {
+    "group": "",
+    "name": "기술인력 보유상태",
+    "score": 5.0,
+    "criteria": "",
+    "elements": ""
+   },
+   {
+    "group": "",
+    "name": "사업의 이해",
+    "score": 8.0,
+    "criteria": "",
+    "elements": ""
+   },
+   {
+    "group": "",
+    "name": "시스템 구축방안",
+    "score": 8.0,
+    "criteria": "",
+    "elements": ""
+   },
+   {
+    "group": "",
+    "name": "인테리어 구현방안",
+    "score": 5.0,
+    "criteria": "",
+    "elements": ""
+   },
+   {
+    "group": "",
+    "name": "기술 및 기능의 우수성",
+    "score": 12.0,
+    "criteria": "",
+    "elements": ""
+   },
+   {
+    "group": "",
+    "name": "성능시험 및 품질관리",
+    "score": 6.0,
+    "criteria": "",
+    "elements": ""
+   },
+   {
+    "group": "",
+    "name": "사업관리",
+    "score": 8.0,
+    "criteria": "",
+    "elements": ""
+   },
+   {
+    "group": "",
+    "name": "사업지원",
+    "score": 8.0,
+    "criteria": "",
+    "elements": ""
+   },
+   {
+    "group": "",
+    "name": "기타(추가제안 등)",
+    "score": 5.0,
+    "criteria": "",
+    "elements": ""
+   },
+   {
+    "group": "",
+    "name": "가격평가",
+    "score": 20.0,
+    "criteria": "",
+    "elements": ""
+   }
+  ]
+ },
+ "재단법인 광주연구원_광주정책연구아카이브(GPA) 시스템 개발.txt": {
+  "원문대조": false,
+  "검산": "합 100",
+  "읽은곳": "model_read_exaone_20261119_115000_항목.txt",
+  "items": [
+   {
+    "group": "",
+    "name": "유사용역 수행실적",
+    "score": 6.0,
+    "criteria": "",
+    "elements": ""
+   },
+   {
+    "group": "",
+    "name": "관련기술인력 보유",
+    "score": 6.0,
+    "criteria": "",
+    "elements": ""
+   },
+   {
+    "group": "",
+    "name": "기업신용도 평가등급",
+    "score": 4.0,
+    "criteria": "",
+    "elements": ""
+   },
+   {
+    "group": "",
+    "name": "사회적 책임",
+    "score": 4.0,
+    "criteria": "",
+    "elements": ""
+   },
+   {
+    "group": "",
+    "name": "대상사업의 이해도",
+    "score": 7.0,
+    "criteria": "",
+    "elements": ""
+   },
+   {
+    "group": "",
+    "name": "사업추진 전략",
+    "score": 8.0,
+    "criteria": "",
+    "elements": ""
+   },
+   {
+    "group": "",
+    "name": "사업추진 내용 및 수행방안",
+    "score": 10.0,
+    "criteria": "",
+    "elements": ""
+   },
+   {
+    "group": "",
+    "name": "기능 및 편의성",
+    "score": 15.0,
+    "criteria": "",
+    "elements": ""
+   },
+   {
+    "group": "",
+    "name": "시스템 유지관리 요구",
+    "score": 5.0,
+    "criteria": "",
+    "elements": ""
+   },
+   {
+    "group": "",
+    "name": "사업수행 조직",
+    "score": 7.0,
+    "criteria": "",
+    "elements": ""
+   },
+   {
+    "group": "",
+    "name": "품질보증 방안",
+    "score": 4.0,
+    "criteria": "",
+    "elements": ""
+   },
+   {
+    "group": "",
+    "name": "일정계획",
+    "score": 4.0,
+    "criteria": "",
+    "elements": ""
+   },
+   {
+    "group": "",
+    "name": "인수인계 방안",
+    "score": 5.0,
+    "criteria": "",
+    "elements": ""
+   },
+   {
+    "group": "",
+    "name": "교육훈련",
+    "score": 2.0,
+    "criteria": "",
+    "elements": ""
+   },
+   {
+    "group": "",
+    "name": "보안대책 및 리스크관리",
+    "score": 3.0,
+    "criteria": "",
+    "elements": ""
+   },
+   {
+    "group": "",
+    "name": "제안가격 평가",
+    "score": 10.0,
+    "criteria": "",
+    "elements": ""
+   }
+  ]
+ },
+ "광주과학기술원_실시간통합연구비관리시스템(RCMS)  연계 모듈 변경 사업.txt": {
+  "원문대조": true,
+  "검산": "합 90",
+  "읽은곳": "model_read_exaone_20261119_110742_항목.txt",
+  "items": [
+   {
+    "group": "",
+    "name": "보유인력",
+    "score": 5.0,
+    "criteria": "",
+    "elements": ""
+   },
+   {
+    "group": "",
+    "name": "재무구조 ‧ 경영상태",
+    "score": 5.0,
+    "criteria": "",
+    "elements": ""
+   },
+   {
+    "group": "",
+    "name": "전략 및 방법론",
+    "score": 10.0,
+    "criteria": "",
+    "elements": ""
+   },
+   {
+    "group": "",
+    "name": "기술 및 기능",
+    "score": 18.0,
+    "criteria": "",
+    "elements": ""
+   },
+   {
+    "group": "",
+    "name": "성능 및 품질",
+    "score": 9.0,
+    "criteria": "",
+    "elements": ""
+   },
+   {
+    "group": "",
+    "name": "프로젝트관리",
+    "score": 9.0,
+    "criteria": "",
+    "elements": ""
+   },
+   {
+    "group": "",
+    "name": "프로젝트지원",
+    "score": 12.0,
+    "criteria": "",
+    "elements": ""
+   },
+   {
+    "group": "",
+    "name": "프로젝트지원",
+    "score": 18.0,
+    "criteria": "",
+    "elements": ""
+   },
+   {
+    "group": "",
+    "name": "하도급",
+    "score": 4.0,
+    "criteria": "",
+    "elements": ""
+   }
+  ]
+ },
+ "고양도시관리공사_관산근린공원 다목적구장 홈페이지 및 회원 통합운영.txt": {
+  "원문대조": false,
+  "검산": "합 100",
+  "읽은곳": "model_read_exaone_20261119_102913_항목.txt",
+  "items": [
+   {
+    "group": "",
+    "name": "사업 이해도",
+    "score": 3.0,
+    "criteria": "",
+    "elements": ""
+   },
+   {
+    "group": "",
+    "name": "추진 전략",
+    "score": 3.0,
+    "criteria": "",
+    "elements": ""
+   },
+   {
+    "group": "",
+    "name": "적용 기술",
+    "score": 3.0,
+    "criteria": "",
+    "elements": ""
+   },
+   {
+    "group": "",
+    "name": "표준 프레임 워크 적용",
+    "score": 2.0,
+    "criteria": "",
+    "elements": ""
+   },
+   {
+    "group": "",
+    "name": "개발 방법론",
+    "score": 1.0,
+    "criteria": "",
+    "elements": ""
+   },
+   {
+    "group": "",
+    "name": "시스템 요구사항",
+    "score": 5.0,
+    "criteria": "",
+    "elements": ""
+   },
+   {
+    "group": "",
+    "name": "기능 요구사항",
+    "score": 10.0,
+    "criteria": "",
+    "elements": ""
+   },
+   {
+    "group": "",
+    "name": "보안 요구사항",
+    "score": 3.0,
+    "criteria": "",
+    "elements": ""
+   },
+   {
+    "group": "",
+    "name": "제약사항",
+    "score": 2.0,
+    "criteria": "",
+    "elements": ""
+   },
+   {
+    "group": "",
+    "name": "성능 요구사항",
+    "score": 4.0,
+    "criteria": "",
+    "elements": ""
+   },
+   {
+    "group": "",
+    "name": "인터 페이스 요구사항",
+    "score": 6.0,
+    "criteria": "",
+    "elements": ""
+   },
+   {
+    "group": "",
+    "name": "테스트 요구사항",
+    "score": 3.0,
+    "criteria": "",
+    "elements": ""
+   },
+   {
+    "group": "",
+    "name": "품질 요구사항",
+    "score": 3.0,
+    "criteria": "",
+    "elements": ""
+   },
+   {
+    "group": "",
+    "name": "관리 방법론",
+    "score": 3.0,
+    "criteria": "",
+    "elements": ""
+   },
+   {
+    "group": "",
+    "name": "관리역량",
+    "score": 2.0,
+    "criteria": "",
+    "elements": ""
+   },
+   {
+    "group": "",
+    "name": "일정계획",
+    "score": 3.0,
+    "criteria": "",
+    "elements": ""
+   },
+   {
+    "group": "",
+    "name": "개발장비",
+    "score": 2.0,
+    "criteria": "",
+    "elements": ""
+   },
+   {
+    "group": "",
+    "name": "품질보증",
+    "score": 2.0,
+    "criteria": "",
+    "elements": ""
+   },
+   {
+    "group": "",
+    "name": "교육훈련",
+    "score": 2.0,
+    "criteria": "",
+    "elements": ""
+   },
+   {
+    "group": "",
+    "name": "유지관리",
+    "score": 3.0,
+    "criteria": "",
+    "elements": ""
+   },
+   {
+    "group": "",
+    "name": "기밀보안",
+    "score": 2.0,
+    "criteria": "",
+    "elements": ""
+   },
+   {
+    "group": "",
+    "name": "비상대책",
+    "score": 1.0,
+    "criteria": "",
+    "elements": ""
+   },
+   {
+    "group": "",
+    "name": "추가제안",
+    "score": 2.0,
+    "criteria": "",
+    "elements": ""
+   },
+   {
+    "group": "",
+    "name": "경영상태",
+    "score": 6.0,
+    "criteria": "",
+    "elements": ""
+   },
+   {
+    "group": "",
+    "name": "사업수행실적",
+    "score": 6.0,
+    "criteria": "",
+    "elements": ""
+   },
+   {
+    "group": "",
+    "name": "기술인력 보유 현황",
+    "score": 6.0,
+    "criteria": "",
+    "elements": ""
+   },
+   {
+    "group": "",
+    "name": "사회적 책임",
+    "score": 2.0,
+    "criteria": "",
+    "elements": ""
+   },
+   {
+    "group": "",
+    "name": "입찰가격",
+    "score": 10.0,
+    "criteria": "",
+    "elements": ""
+   }
+  ]
+ },
+ "그랜드코리아레저(주)_2024년도 GKL  그룹웨어 시스템 구축 용역.txt": {
+  "원문대조": false,
+  "검산": "합 100",
+  "읽은곳": "model_read_exaone_20261119_102913_항목.txt",
+  "items": [
+   {
+    "group": "",
+    "name": "재무구조‧경영상태",
+    "score": 5.0,
+    "criteria": "",
+    "elements": ""
+   },
+   {
+    "group": "",
+    "name": "수행실적",
+    "score": 5.0,
+    "criteria": "",
+    "elements": ""
+   },
+   {
+    "group": "",
+    "name": "사업이해도",
+    "score": 5.0,
+    "criteria": "",
+    "elements": ""
+   },
+   {
+    "group": "",
+    "name": "추진전략",
+    "score": 5.0,
+    "criteria": "",
+    "elements": ""
+   },
+   {
+    "group": "",
+    "name": "적용기술",
+    "score": 5.0,
+    "criteria": "",
+    "elements": ""
+   },
+   {
+    "group": "",
+    "name": "표준프레임워크 적용",
+    "score": 5.0,
+    "criteria": "",
+    "elements": ""
+   },
+   {
+    "group": "",
+    "name": "개발방법론",
+    "score": 5.0,
+    "criteria": "",
+    "elements": ""
+   },
+   {
+    "group": "",
+    "name": "시스템 구성 요구사항",
+    "score": 5.0,
+    "criteria": "",
+    "elements": ""
+   },
+   {
+    "group": "",
+    "name": "기능 요구사항 / 데이터 요구사항",
+    "score": 10.0,
+    "criteria": "",
+    "elements": ""
+   },
+   {
+    "group": "",
+    "name": "시스템 운영 요구사항 보안 요구사항/ 제약사항",
+    "score": 10.0,
+    "criteria": "",
+    "elements": ""
+   },
+   {
+    "group": "",
+    "name": "성능 요구사항",
+    "score": 10.0,
+    "criteria": "",
+    "elements": ""
+   },
+   {
+    "group": "",
+    "name": "관리방법론",
+    "score": 10.0,
+    "criteria": "",
+    "elements": ""
+   },
+   {
+    "group": "",
+    "name": "품질보증",
+    "score": 10.0,
+    "criteria": "",
+    "elements": ""
+   },
+   {
+    "group": "",
+    "name": "제안가격 적정성",
+    "score": 10.0,
+    "criteria": "",
+    "elements": ""
+   }
+  ]
+ },
+ "대한적십자사 의료원_적십자병원 병원정보 재해복구시스템 구축 용역 .txt": {
+  "원문대조": false,
+  "검산": "합 90",
+  "읽은곳": "model_read_exaone_20261119_102913_항목.txt",
+  "items": [
+   {
+    "group": "",
+    "name": "경영상태",
+    "score": 10.0,
+    "criteria": "",
+    "elements": ""
+   },
+   {
+    "group": "",
+    "name": "유사분야 사업수행 경험",
+    "score": 10.0,
+    "criteria": "",
+    "elements": ""
+   },
+   {
+    "group": "",
+    "name": "사업 이해도",
+    "score": 5.0,
+    "criteria": "",
+    "elements": ""
+   },
+   {
+    "group": "",
+    "name": "추진전략",
+    "score": 5.0,
+    "criteria": "",
+    "elements": ""
+   },
+   {
+    "group": "",
+    "name": "시스템 요구사항",
+    "score": 10.0,
+    "criteria": "",
+    "elements": ""
+   },
+   {
+    "group": "",
+    "name": "기능 요구사항",
+    "score": 10.0,
+    "criteria": "",
+    "elements": ""
+   },
+   {
+    "group": "",
+    "name": "보안 요구사항",
+    "score": 5.0,
+    "criteria": "",
+    "elements": ""
+   },
+   {
+    "group": "",
+    "name": "관리 방법론",
+    "score": 10.0,
+    "criteria": "",
+    "elements": ""
+   },
+   {
+    "group": "",
+    "name": "일정계획",
+    "score": 10.0,
+    "criteria": "",
+    "elements": ""
+   },
+   {
+    "group": "",
+    "name": "품질보증, 시험운영 및 교육훈련",
+    "score": 5.0,
+    "criteria": "",
+    "elements": ""
+   },
+   {
+    "group": "",
+    "name": "유지관리 및 하자보수 계획",
+    "score": 5.0,
+    "criteria": "",
+    "elements": ""
+   },
+   {
+    "group": "",
+    "name": "기밀보안 및 비상대책",
+    "score": 5.0,
+    "criteria": "",
+    "elements": ""
+   }
+  ]
+ },
+ "사단법인 보험개발원_실손보험 청구 전산화 시스템 구축 사업.txt": {
+  "원문대조": false,
+  "검산": "합 70",
+  "읽은곳": "model_read_exaone_20261119_102913_항목.txt",
+  "items": [
+   {
+    "group": "",
+    "name": "사업의 이해",
+    "score": 1.0,
+    "criteria": "",
+    "elements": ""
+   },
+   {
+    "group": "",
+    "name": "제안 목적",
+    "score": 2.0,
+    "criteria": "",
+    "elements": ""
+   },
+   {
+    "group": "",
+    "name": "추진 전략",
+    "score": 5.0,
+    "criteria": "",
+    "elements": ""
+   },
+   {
+    "group": "",
+    "name": "시스템 구축 방법론",
+    "score": 2.0,
+    "criteria": "",
+    "elements": ""
+   },
+   {
+    "group": "",
+    "name": "사업수행 및 구축 방안",
+    "score": 2.0,
+    "criteria": "",
+    "elements": ""
+   },
+   {
+    "group": "",
+    "name": "유사사업 수행경험",
+    "score": 4.0,
+    "criteria": "",
+    "elements": ""
+   },
+   {
+    "group": "",
+    "name": "시스템 구축 수행방안",
+    "score": 4.0,
+    "criteria": "",
+    "elements": ""
+   },
+   {
+    "group": "",
+    "name": "기능 및 성능 수행방안",
+    "score": 4.0,
+    "criteria": "",
+    "elements": ""
+   },
+   {
+    "group": "",
+    "name": "데이터 부문 수행방안",
+    "score": 2.0,
+    "criteria": "",
+    "elements": ""
+   },
+   {
+    "group": "",
+    "name": "보안 부문 수행방안",
+    "score": 5.0,
+    "criteria": "",
+    "elements": ""
+   },
+   {
+    "group": "",
+    "name": "인터페이스 수행방안",
+    "score": 4.0,
+    "criteria": "",
+    "elements": ""
+   },
+   {
+    "group": "",
+    "name": "테스트/품질 수행방안",
+    "score": 3.0,
+    "criteria": "",
+    "elements": ""
+   },
+   {
+    "group": "",
+    "name": "관리방법론",
+    "score": 2.0,
+    "criteria": "",
+    "elements": ""
+   },
+   {
+    "group": "",
+    "name": "조직관리",
+    "score": 2.0,
+    "criteria": "",
+    "elements": ""
+   },
+   {
+    "group": "",
+    "name": "계획관리",
+    "score": 2.0,
+    "criteria": "",
+    "elements": ""
+   },
+   {
+    "group": "",
+    "name": "품질관리",
+    "score": 2.0,
+    "criteria": "",
+    "elements": ""
+   },
+   {
+    "group": "",
+    "name": "보안관리",
+    "score": 2.0,
+    "criteria": "",
+    "elements": ""
+   },
+   {
+    "group": "",
+    "name": "추가 제안",
+    "score": 2.0,
+    "criteria": "",
+    "elements": ""
+   },
+   {
+    "group": "",
+    "name": "사업수행실적",
+    "score": 10.0,
+    "criteria": "",
+    "elements": ""
+   },
+   {
+    "group": "",
+    "name": "경영상태",
+    "score": 10.0,
+    "criteria": "",
+    "elements": ""
+   }
+  ]
+ },
+ "서울특별시 여성가족재단_(재공고, 협상) 서울 디지털성범죄 안심지원센.txt": {
+  "원문대조": false,
+  "검산": "합 100",
+  "읽은곳": "model_read_exaone_20261119_102913_항목.txt",
+  "items": [
+   {
+    "group": "",
+    "name": "대상사업 이해도",
+    "score": 4.0,
+    "criteria": "",
+    "elements": ""
+   },
+   {
+    "group": "",
+    "name": "사업추진 전략",
+    "score": 4.0,
+    "criteria": "",
+    "elements": ""
+   },
+   {
+    "group": "",
+    "name": "적용기술 및 방법론",
+    "score": 4.0,
+    "criteria": "",
+    "elements": ""
+   },
+   {
+    "group": "",
+    "name": "사업추진 내용",
+    "score": 10.0,
+    "criteria": "",
+    "elements": ""
+   },
+   {
+    "group": "",
+    "name": "시스템 장비구성 및 성능, 정보보호 및 제약사항에 대한 제안 내용의 적정성",
+    "score": 10.0,
+    "criteria": "",
+    "elements": ""
+   },
+   {
+    "group": "",
+    "name": "성능확보방안",
+    "score": 4.0,
+    "criteria": "",
+    "elements": ""
+   },
+   {
+    "group": "",
+    "name": "품질보증 방안",
+    "score": 4.0,
+    "criteria": "",
+    "elements": ""
+   },
+   {
+    "group": "",
+    "name": "관리방법론",
+    "score": 5.0,
+    "criteria": "",
+    "elements": ""
+   },
+   {
+    "group": "",
+    "name": "일정계획",
+    "score": 5.0,
+    "criteria": "",
+    "elements": ""
+   },
+   {
+    "group": "",
+    "name": "추가제안",
+    "score": 5.0,
+    "criteria": "",
+    "elements": ""
+   },
+   {
+    "group": "",
+    "name": "교육훈련 및 기술이전",
+    "score": 5.0,
+    "criteria": "",
+    "elements": ""
+   },
+   {
+    "group": "",
+    "name": "하자보수 및 비상대책 방안",
+    "score": 5.0,
+    "criteria": "",
+    "elements": ""
+   },
+   {
+    "group": "",
+    "name": "기밀보안",
+    "score": 5.0,
+    "criteria": "",
+    "elements": ""
+   },
+   {
+    "group": "",
+    "name": "수행실적 금액",
+    "score": 3.0,
+    "criteria": "",
+    "elements": ""
+   },
+   {
+    "group": "",
+    "name": "수행실적 건수",
+    "score": 3.0,
+    "criteria": "",
+    "elements": ""
+   },
+   {
+    "group": "",
+    "name": "경영상태",
+    "score": 5.0,
+    "criteria": "",
+    "elements": ""
+   },
+   {
+    "group": "",
+    "name": "하도급계획의 적정성",
+    "score": 5.0,
+    "criteria": "",
+    "elements": ""
+   },
+   {
+    "group": "",
+    "name": "기술 및 품질인증",
+    "score": 4.0,
+    "criteria": "",
+    "elements": ""
+   },
+   {
+    "group": "",
+    "name": "입찰가격",
+    "score": 10.0,
+    "criteria": "",
+    "elements": ""
+   }
+  ]
+ },
+ "세종테크노파크_세종테크노파크 인사정보 전산시스템 구축 용역 입찰공.txt": {
+  "원문대조": false,
+  "검산": "합 90",
+  "읽은곳": "model_read_exaone_20261119_102913_항목.txt",
+  "items": [
+   {
+    "group": "",
+    "name": "신용평가등급·자본금·매출액",
+    "score": 3.0,
+    "criteria": "",
+    "elements": ""
+   },
+   {
+    "group": "",
+    "name": "유사사업 실적 건수",
+    "score": 3.0,
+    "criteria": "",
+    "elements": ""
+   },
+   {
+    "group": "",
+    "name": "유사사업 실적 금액",
+    "score": 3.0,
+    "criteria": "",
+    "elements": ""
+   },
+   {
+    "group": "",
+    "name": "보유인력(기술등급)",
+    "score": 1.0,
+    "criteria": "",
+    "elements": ""
+   },
+   {
+    "group": "",
+    "name": "사업의 이해도",
+    "score": 5.0,
+    "criteria": "",
+    "elements": ""
+   },
+   {
+    "group": "",
+    "name": "추진 전략",
+    "score": 3.0,
+    "criteria": "",
+    "elements": ""
+   },
+   {
+    "group": "",
+    "name": "적용 기술",
+    "score": 3.0,
+    "criteria": "",
+    "elements": ""
+   },
+   {
+    "group": "",
+    "name": "표준 프레임 워크 적용",
+    "score": 2.0,
+    "criteria": "",
+    "elements": ""
+   },
+   {
+    "group": "",
+    "name": "개발 방법론",
+    "score": 2.0,
+    "criteria": "",
+    "elements": ""
+   },
+   {
+    "group": "",
+    "name": "시스템 요구사항",
+    "score": 5.0,
+    "criteria": "",
+    "elements": ""
+   },
+   {
+    "group": "",
+    "name": "기능 요구사항",
+    "score": 8.0,
+    "criteria": "",
+    "elements": ""
+   },
+   {
+    "group": "",
+    "name": "보안 요구사항",
+    "score": 3.0,
+    "criteria": "",
+    "elements": ""
+   },
+   {
+    "group": "",
+    "name": "데이터 요구 사항",
+    "score": 4.0,
+    "criteria": "",
+    "elements": ""
+   },
+   {
+    "group": "",
+    "name": "시스템운영 요구사항",
+    "score": 2.0,
+    "criteria": "",
+    "elements": ""
+   },
+   {
+    "group": "",
+    "name": "제약 사항",
+    "score": 2.0,
+    "criteria": "",
+    "elements": ""
+   },
+   {
+    "group": "",
+    "name": "성능 요구사항",
+    "score": 5.0,
+    "criteria": "",
+    "elements": ""
+   },
+   {
+    "group": "",
+    "name": "품질 요구사항",
+    "score": 3.0,
+    "criteria": "",
+    "elements": ""
+   },
+   {
+    "group": "",
+    "name": "인터페이스 요구사항",
+    "score": 5.0,
+    "criteria": "",
+    "elements": ""
+   },
+   {
+    "group": "",
+    "name": "관리 방법론",
+    "score": 5.0,
+    "criteria": "",
+    "elements": ""
+   },
+   {
+    "group": "",
+    "name": "일정 계획",
+    "score": 5.0,
+    "criteria": "",
+    "elements": ""
+   },
+   {
+    "group": "",
+    "name": "개발 장비",
+    "score": 4.0,
+    "criteria": "",
+    "elements": ""
+   },
+   {
+    "group": "",
+    "name": "품질 보증",
+    "score": 2.0,
+    "criteria": "",
+    "elements": ""
+   },
+   {
+    "group": "",
+    "name": "시험 운영",
+    "score": 2.0,
+    "criteria": "",
+    "elements": ""
+   },
+   {
+    "group": "",
+    "name": "교육 훈련",
+    "score": 2.0,
+    "criteria": "",
+    "elements": ""
+   },
+   {
+    "group": "",
+    "name": "유지 관리",
+    "score": 2.0,
+    "criteria": "",
+    "elements": ""
+   },
+   {
+    "group": "",
+    "name": "하자 보수 계획",
+    "score": 2.0,
+    "criteria": "",
+    "elements": ""
+   },
+   {
+    "group": "",
+    "name": "기밀 보안",
+    "score": 2.0,
+    "criteria": "",
+    "elements": ""
+   },
+   {
+    "group": "",
+    "name": "비상 대책",
+    "score": 2.0,
+    "criteria": "",
+    "elements": ""
+   }
+  ]
+ },
+ "수협중앙회_수협중앙회 수산물사이버직매장 시스템 재구축 ISMP 수립 입.txt": {
+  "원문대조": true,
+  "검산": "합 100",
+  "읽은곳": "model_read_exaone_20261119_102913_항목.txt",
+  "items": [
+   {
+    "group": "",
+    "name": "대상사업 이해도",
+    "score": 3.0,
+    "criteria": "",
+    "elements": ""
+   },
+   {
+    "group": "",
+    "name": "사업추진 전략",
+    "score": 3.0,
+    "criteria": "",
+    "elements": ""
+   },
+   {
+    "group": "",
+    "name": "사업추진 방법론",
+    "score": 4.0,
+    "criteria": "",
+    "elements": ""
+   },
+   {
+    "group": "",
+    "name": "컨설팅 분석",
+    "score": 5.0,
+    "criteria": "",
+    "elements": ""
+   },
+   {
+    "group": "",
+    "name": "컨설팅 계획 수립",
+    "score": 5.0,
+    "criteria": "",
+    "elements": ""
+   },
+   {
+    "group": "",
+    "name": "타당석 분석",
+    "score": 7.0,
+    "criteria": "",
+    "elements": ""
+   },
+   {
+    "group": "",
+    "name": "제약사항",
+    "score": 3.0,
+    "criteria": "",
+    "elements": ""
+   },
+   {
+    "group": "",
+    "name": "데이터 요건",
+    "score": 5.0,
+    "criteria": "",
+    "elements": ""
+   },
+   {
+    "group": "",
+    "name": "관리방법론",
+    "score": 5.0,
+    "criteria": "",
+    "elements": ""
+   },
+   {
+    "group": "",
+    "name": "일정계획",
+    "score": 5.0,
+    "criteria": "",
+    "elements": ""
+   },
+   {
+    "group": "",
+    "name": "사업수행방안",
+    "score": 10.0,
+    "criteria": "",
+    "elements": ""
+   },
+   {
+    "group": "",
+    "name": "사업수행을 위한 품질보증방안",
+    "score": 2.0,
+    "criteria": "",
+    "elements": ""
+   },
+   {
+    "group": "",
+    "name": "교육훈련 및 기술이전",
+    "score": 2.0,
+    "criteria": "",
+    "elements": ""
+   },
+   {
+    "group": "",
+    "name": "기밀보안",
+    "score": 1.0,
+    "criteria": "",
+    "elements": ""
+   },
+   {
+    "group": "",
+    "name": "수행실적 금액",
+    "score": 5.0,
+    "criteria": "",
+    "elements": ""
+   },
+   {
+    "group": "",
+    "name": "수행실적 건수",
+    "score": 3.0,
+    "criteria": "",
+    "elements": ""
+   },
+   {
+    "group": "",
+    "name": "경영상태",
+    "score": 3.0,
+    "criteria": "",
+    "elements": ""
+   },
+   {
+    "group": "",
+    "name": "사업참여 전문인력 보유현황",
+    "score": 6.0,
+    "criteria": "",
+    "elements": ""
+   },
+   {
+    "group": "",
+    "name": "사업참여 인력수",
+    "score": 3.0,
+    "criteria": "",
+    "elements": ""
+   },
+   {
+    "group": "",
+    "name": "입찰가격",
+    "score": 20.0,
+    "criteria": "",
+    "elements": ""
+   }
+  ]
+ },
+ "인천광역시_도시계획위원회 통합관리시스템 구축용역.txt": {
+  "원문대조": true,
+  "검산": "합 100",
+  "읽은곳": "model_read_exaone_20261119_102913_항목.txt",
+  "items": [
+   {
+    "group": "",
+    "name": "사업수행실적",
+    "score": 6.0,
+    "criteria": "",
+    "elements": ""
+   },
+   {
+    "group": "",
+    "name": "경영상태",
+    "score": 2.0,
+    "criteria": "",
+    "elements": ""
+   },
+   {
+    "group": "",
+    "name": "조직의 전문성",
+    "score": 6.0,
+    "criteria": "",
+    "elements": ""
+   },
+   {
+    "group": "",
+    "name": "신인도",
+    "score": 6.0,
+    "criteria": "",
+    "elements": ""
+   },
+   {
+    "group": "",
+    "name": "전략 및 방법론",
+    "score": 15.0,
+    "criteria": "",
+    "elements": ""
+   },
+   {
+    "group": "",
+    "name": "기술 및 기능",
+    "score": 20.0,
+    "criteria": "",
+    "elements": ""
+   },
+   {
+    "group": "",
+    "name": "성능 및 품질",
+    "score": 10.0,
+    "criteria": "",
+    "elements": ""
+   },
+   {
+    "group": "",
+    "name": "프로젝트관리",
+    "score": 10.0,
+    "criteria": "",
+    "elements": ""
+   },
+   {
+    "group": "",
+    "name": "프로젝트지원",
+    "score": 10.0,
+    "criteria": "",
+    "elements": ""
+   },
+   {
+    "group": "",
+    "name": "기타",
+    "score": 5.0,
+    "criteria": "",
+    "elements": ""
+   },
+   {
+    "group": "",
+    "name": "가격평가",
+    "score": 10.0,
+    "criteria": "",
+    "elements": ""
+   }
+  ]
+ },
+ "재단법인 광주광역시 광주문화재단_2024년 광주문화예술통합플랫폼 시스.txt": {
+  "원문대조": false,
+  "검산": "합 100",
+  "읽은곳": "model_read_exaone_20261119_102913_항목.txt",
+  "items": [
+   {
+    "group": "",
+    "name": "경영상태",
+    "score": 3.0,
+    "criteria": "",
+    "elements": ""
+   },
+   {
+    "group": "",
+    "name": "수행실적",
+    "score": 3.0,
+    "criteria": "",
+    "elements": ""
+   },
+   {
+    "group": "",
+    "name": "기술수행능력",
+    "score": 3.0,
+    "criteria": "",
+    "elements": ""
+   },
+   {
+    "group": "",
+    "name": "신인도 평가",
+    "score": 1.0,
+    "criteria": "",
+    "elements": ""
+   },
+   {
+    "group": "",
+    "name": "사업의 이해도",
+    "score": 10.0,
+    "criteria": "",
+    "elements": ""
+   },
+   {
+    "group": "",
+    "name": "수행기관 전문성",
+    "score": 20.0,
+    "criteria": "",
+    "elements": ""
+   },
+   {
+    "group": "",
+    "name": "사업수행 능력",
+    "score": 30.0,
+    "criteria": "",
+    "elements": ""
+   },
+   {
+    "group": "",
+    "name": "사업관리 방안",
+    "score": 20.0,
+    "criteria": "",
+    "elements": ""
+   },
+   {
+    "group": "",
+    "name": "가격평가",
+    "score": 10.0,
+    "criteria": "",
+    "elements": ""
+   }
+  ]
+ },
+ "재단법인경기도일자리재단_2025년 통합접수시스템 운영.txt": {
+  "원문대조": false,
+  "검산": "합 100",
+  "읽은곳": "model_read_exaone_20261119_102913_항목.txt",
+  "items": [
+   {
+    "group": "",
+    "name": "수행경험(실적)",
+    "score": 5.0,
+    "criteria": "",
+    "elements": ""
+   },
+   {
+    "group": "",
+    "name": "경영상태",
+    "score": 5.0,
+    "criteria": "",
+    "elements": ""
+   },
+   {
+    "group": "",
+    "name": "전문인력보유현황",
+    "score": 5.0,
+    "criteria": "",
+    "elements": ""
+   },
+   {
+    "group": "",
+    "name": "신인도",
+    "score": 5.0,
+    "criteria": "",
+    "elements": ""
+   },
+   {
+    "group": "",
+    "name": "제안개요(사업이해도)",
+    "score": 15.0,
+    "criteria": "",
+    "elements": ""
+   },
+   {
+    "group": "",
+    "name": "기능 및 유지관리 요구사항",
+    "score": 30.0,
+    "criteria": "",
+    "elements": ""
+   },
+   {
+    "group": "",
+    "name": "사업관리방안",
+    "score": 20.0,
+    "criteria": "",
+    "elements": ""
+   },
+   {
+    "group": "",
+    "name": "아이디어 제안",
+    "score": 5.0,
+    "criteria": "",
+    "elements": ""
+   },
+   {
+    "group": "",
+    "name": "가격평가",
+    "score": 10.0,
+    "criteria": "",
+    "elements": ""
+   }
+  ]
+ },
+ "한국사학진흥재단_대학재정정보시스템(기본재산 및 기채 사후관리) 고.txt": {
+  "원문대조": false,
+  "검산": "합 90",
+  "읽은곳": "model_read_exaone_20261119_102913_항목.txt",
+  "items": [
+   {
+    "group": "",
+    "name": "경영상태",
+    "score": 2.0,
+    "criteria": "",
+    "elements": ""
+   },
+   {
+    "group": "",
+    "name": "수행실적",
+    "score": 2.0,
+    "criteria": "",
+    "elements": ""
+   },
+   {
+    "group": "",
+    "name": "성실성",
+    "score": 1.0,
+    "criteria": "",
+    "elements": ""
+   },
+   {
+    "group": "",
+    "name": "사업 이해도",
+    "score": 5.0,
+    "criteria": "",
+    "elements": ""
+   },
+   {
+    "group": "",
+    "name": "추진 전략",
+    "score": 5.0,
+    "criteria": "",
+    "elements": ""
+   },
+   {
+    "group": "",
+    "name": "적용 기술",
+    "score": 5.0,
+    "criteria": "",
+    "elements": ""
+   },
+   {
+    "group": "",
+    "name": "개발 방법론",
+    "score": 5.0,
+    "criteria": "",
+    "elements": ""
+   },
+   {
+    "group": "",
+    "name": "기능 요구 사항",
+    "score": 7.0,
+    "criteria": "",
+    "elements": ""
+   },
+   {
+    "group": "",
+    "name": "보안 요구 사항",
+    "score": 6.0,
+    "criteria": "",
+    "elements": ""
+   },
+   {
+    "group": "",
+    "name": "데이터 요구 사항",
+    "score": 6.0,
+    "criteria": "",
+    "elements": ""
+   },
+   {
+    "group": "",
+    "name": "제약 사항",
+    "score": 6.0,
+    "criteria": "",
+    "elements": ""
+   },
+   {
+    "group": "",
+    "name": "성능 요구 사항",
+    "score": 5.0,
+    "criteria": "",
+    "elements": ""
+   },
+   {
+    "group": "",
+    "name": "품질 요구 사항",
+    "score": 5.0,
+    "criteria": "",
+    "elements": ""
+   },
+   {
+    "group": "",
+    "name": "인터 페이스 요구 사항",
+    "score": 5.0,
+    "criteria": "",
+    "elements": ""
+   },
+   {
+    "group": "",
+    "name": "관리 방법론",
+    "score": 4.0,
+    "criteria": "",
+    "elements": ""
+   },
+   {
+    "group": "",
+    "name": "일정 계획",
+    "score": 4.0,
+    "criteria": "",
+    "elements": ""
+   },
+   {
+    "group": "",
+    "name": "개발 장비",
+    "score": 2.0,
+    "criteria": "",
+    "elements": ""
+   },
+   {
+    "group": "",
+    "name": "품질 보증",
+    "score": 2.0,
+    "criteria": "",
+    "elements": ""
+   },
+   {
+    "group": "",
+    "name": "시험 운영",
+    "score": 3.0,
+    "criteria": "",
+    "elements": ""
+   },
+   {
+    "group": "",
+    "name": "교육 훈련",
+    "score": 1.0,
+    "criteria": "",
+    "elements": ""
+   },
+   {
+    "group": "",
+    "name": "하자 보수 계획",
+    "score": 2.0,
+    "criteria": "",
+    "elements": ""
+   },
+   {
+    "group": "",
+    "name": "기밀 보안",
+    "score": 1.0,
+    "criteria": "",
+    "elements": ""
+   },
+   {
+    "group": "",
+    "name": "비상 대책",
+    "score": 1.0,
+    "criteria": "",
+    "elements": ""
+   },
+   {
+    "group": "",
+    "name": "하도급 계획 적정성",
+    "score": 5.0,
+    "criteria": "",
+    "elements": ""
+   }
+  ]
+ },
+ "한국해양조사협회_2024년 항해용 간행물 품질관리 업무보조 시스템 구축.txt": {
+  "원문대조": true,
+  "검산": "합 100",
+  "읽은곳": "model_read_exaone_20261119_102913_항목.txt",
+  "items": [
+   {
+    "group": "",
+    "name": "인력 전문성",
+    "score": 7.0,
+    "criteria": "",
+    "elements": ""
+   },
+   {
+    "group": "",
+    "name": "경영상태",
+    "score": 3.0,
+    "criteria": "",
+    "elements": ""
+   },
+   {
+    "group": "",
+    "name": "사업 이해도",
+    "score": 8.0,
+    "criteria": "",
+    "elements": ""
+   },
+   {
+    "group": "",
+    "name": "추진전략",
+    "score": 5.0,
+    "criteria": "",
+    "elements": ""
+   },
+   {
+    "group": "",
+    "name": "적용기술",
+    "score": 5.0,
+    "criteria": "",
+    "elements": ""
+   },
+   {
+    "group": "",
+    "name": "사업수행 방법론",
+    "score": 7.0,
+    "criteria": "",
+    "elements": ""
+   },
+   {
+    "group": "",
+    "name": "시스템 및 기능요구사항",
+    "score": 10.0,
+    "criteria": "",
+    "elements": ""
+   },
+   {
+    "group": "",
+    "name": "보안 및 데이터 요구사항",
+    "score": 7.0,
+    "criteria": "",
+    "elements": ""
+   },
+   {
+    "group": "",
+    "name": "시스템 운영 및 기타 세부요건",
+    "score": 8.0,
+    "criteria": "",
+    "elements": ""
+   },
+   {
+    "group": "",
+    "name": "관리 방법론",
+    "score": 5.0,
+    "criteria": "",
+    "elements": ""
+   },
+   {
+    "group": "",
+    "name": "추진일정",
+    "score": 2.0,
+    "criteria": "",
+    "elements": ""
+   },
+   {
+    "group": "",
+    "name": "사업수행조직",
+    "score": 3.0,
+    "criteria": "",
+    "elements": ""
+   },
+   {
+    "group": "",
+    "name": "품질 및 시험 운영",
+    "score": 4.0,
+    "criteria": "",
+    "elements": ""
+   },
+   {
+    "group": "",
+    "name": "하자보수",
+    "score": 2.0,
+    "criteria": "",
+    "elements": ""
+   },
+   {
+    "group": "",
+    "name": "기밀보안",
+    "score": 2.0,
+    "criteria": "",
+    "elements": ""
+   },
+   {
+    "group": "",
+    "name": "교육지원/ 기술이전",
+    "score": 2.0,
+    "criteria": "",
+    "elements": ""
+   },
+   {
+    "group": "",
+    "name": "가격평가",
+    "score": 20.0,
+    "criteria": "",
+    "elements": ""
+   }
+  ]
+ },
+ "(사)부산국제영화제_2024년 BIFF & ACFM 온라인서비스 재개발 및 행사지원시.txt": {
+  "원문대조": false,
+  "검산": "합 100",
+  "읽은곳": "model_read_exaone_20261119_093843_항목.txt",
+  "items": [
+   {
+    "group": "",
+    "name": "신용평가등급에 의한 경영상태",
+    "score": 4.0,
+    "criteria": "",
+    "elements": ""
+   },
+   {
+    "group": "",
+    "name": "유사사업 수행실적",
+    "score": 4.0,
+    "criteria": "",
+    "elements": ""
+   },
+   {
+    "group": "",
+    "name": "최근 3년간 부정당업체 제재 여부",
+    "score": 2.0,
+    "criteria": "",
+    "elements": ""
+   },
+   {
+    "group": "",
+    "name": "사업이해도",
+    "score": 10.0,
+    "criteria": "",
+    "elements": ""
+   },
+   {
+    "group": "",
+    "name": "목표시스템 구성의 적정성",
+    "score": 10.0,
+    "criteria": "",
+    "elements": ""
+   },
+   {
+    "group": "",
+    "name": "디자인컨셉, 디자인 능력",
+    "score": 10.0,
+    "criteria": "",
+    "elements": ""
+   },
+   {
+    "group": "",
+    "name": "홈페이지 구축방안",
+    "score": 10.0,
+    "criteria": "",
+    "elements": ""
+   },
+   {
+    "group": "",
+    "name": "모바일 앱 구축방안",
+    "score": 10.0,
+    "criteria": "",
+    "elements": ""
+   },
+   {
+    "group": "",
+    "name": "행사지원시스템 공급방안",
+    "score": 10.0,
+    "criteria": "",
+    "elements": ""
+   },
+   {
+    "group": "",
+    "name": "추진일정계획 등 사업관리",
+    "score": 10.0,
+    "criteria": "",
+    "elements": ""
+   },
+   {
+    "group": "",
+    "name": "운영교육, 기술 등 사업지원",
+    "score": 10.0,
+    "criteria": "",
+    "elements": ""
+   },
+   {
+    "group": "",
+    "name": "입찰가격 평가",
+    "score": 10.0,
+    "criteria": "",
+    "elements": ""
+   }
+  ]
+ },
+ "국가철도공단_철도인프라 디지털트윈 정보화전략계획(ISP) 수립 용역(변.txt": {
+  "원문대조": false,
+  "검산": "합 100",
+  "읽은곳": "model_read_20261119_092045_항목.txt",
+  "items": [
+   {
+    "group": "",
+    "name": "경영상태",
+    "score": 5.0,
+    "criteria": "",
+    "elements": ""
+   },
+   {
+    "group": "",
+    "name": "수행경험 및 실적",
+    "score": 5.0,
+    "criteria": "",
+    "elements": ""
+   },
+   {
+    "group": "",
+    "name": "투입인력 적정성",
+    "score": 5.0,
+    "criteria": "",
+    "elements": ""
+   },
+   {
+    "group": "",
+    "name": "사업이해도",
+    "score": 10.0,
+    "criteria": "",
+    "elements": ""
+   },
+   {
+    "group": "",
+    "name": "추진전략",
+    "score": 10.0,
+    "criteria": "",
+    "elements": ""
+   },
+   {
+    "group": "",
+    "name": "추진방법론",
+    "score": 10.0,
+    "criteria": "",
+    "elements": ""
+   },
+   {
+    "group": "",
+    "name": "컨설팅 요구사항",
+    "score": 10.0,
+    "criteria": "",
+    "elements": ""
+   },
+   {
+    "group": "",
+    "name": "데이터 요구사항",
+    "score": 5.0,
+    "criteria": "",
+    "elements": ""
+   },
+   {
+    "group": "",
+    "name": "보안 요구사항",
+    "score": 5.0,
+    "criteria": "",
+    "elements": ""
+   },
+   {
+    "group": "",
+    "name": "품질 요구사항",
+    "score": 5.0,
+    "criteria": "",
+    "elements": ""
+   },
+   {
+    "group": "",
+    "name": "제약사항",
+    "score": 5.0,
+    "criteria": "",
+    "elements": ""
+   },
+   {
+    "group": "",
+    "name": "관리 방법론",
+    "score": 5.0,
+    "criteria": "",
+    "elements": ""
+   },
+   {
+    "group": "",
+    "name": "일정계획",
+    "score": 5.0,
+    "criteria": "",
+    "elements": ""
+   },
+   {
+    "group": "",
+    "name": "수행조직 및 이력사항",
+    "score": 5.0,
+    "criteria": "",
+    "elements": ""
+   },
+   {
+    "group": "",
+    "name": "기밀보안",
+    "score": 5.0,
+    "criteria": "",
+    "elements": ""
+   },
+   {
+    "group": "",
+    "name": "비상대책",
+    "score": 5.0,
+    "criteria": "",
+    "elements": ""
+   }
+  ]
+ }
+}
