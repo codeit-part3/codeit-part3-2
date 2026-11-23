@@ -100,6 +100,11 @@ def main():
     )
     ap.add_argument("--chunker", default=None, choices=["fixed", "struct"])
     ap.add_argument(
+        "--pkg-engine",
+        default="rerank_rag",
+        help="--pkg 일 때 쓸 engines/ 하위 엔진 폴더 이름 (기본 rerank_rag)",
+    )
+    ap.add_argument(
         "--rewrite", action="store_true", help="후속질문 사업명/기관명 이어 붙이기"
     )
     ap.add_argument(
@@ -130,6 +135,11 @@ def main():
         + mine.variant
         + (str(mine.pool) if "rerank" in mine.variant else "")
         + (f"_{mine.chunker}" if mine.pkg and mine.chunker else "")
+        + (
+            f"_{mine.pkg_engine}"
+            if mine.pkg and mine.pkg_engine != "rerank_rag"
+            else ""
+        )
         + ("_rw" if mine.pkg and mine.rewrite else "")
         + (
             f"_c{str(mine.cutoff).replace('.', '')}"
@@ -154,7 +164,9 @@ def main():
     if (
         mine.pkg
     ):  # engines/rerank_rag/baseline.py 를 evaluate.py 의 baseline 자리에 통째로 끼움
-        from engines.rerank_rag import baseline as eng
+        import importlib
+
+        eng = importlib.import_module(f"engines.{mine.pkg_engine}.baseline")
 
         eng.set_search(
             agency_filter="filter" in mine.variant,
