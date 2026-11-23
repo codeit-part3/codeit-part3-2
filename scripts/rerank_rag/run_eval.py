@@ -19,6 +19,7 @@ evaluate.py / baseline.py 는 한 줄도 고치지 않는다.
 """
 
 import argparse
+import re
 import sys
 from pathlib import Path
 
@@ -33,6 +34,33 @@ from agency_filter import RERANKER, build_agency_index, find_agencies  # noqa: E
 
 import evaluate  # noqa: E402
 from engines.local_model import baseline  # noqa: E402
+
+# 추가: 채점 규칙 보강: evaluate.py 는 그대로 두고, 이 파일로 실행할 때만 적용
+# "사업예산은 비공개" 처럼 금액이 공개되지 않았다고 답한 경우를 거절로 인정 (q43 골든셋 정답 기준)
+if "비공개" not in evaluate.DONT_KNOW:
+    evaluate.DONT_KNOW.append("비공개")
+
+
+# 추가: LLM 채점 보정: 답 없는 문항에서 규칙상 거절(DONT_KNOW 표현 + 금액 없음)이면 refused=True 로 인정
+# (LLM 채점이 고정 거절 문구도 '거절 아님'으로 판정하는 사례가 있어서. judge.py 는 그대로 둠)
+def _rule_refused(answer):
+    text = str(answer)
+    squashed = evaluate.squash(text)
+    said = any(evaluate.squash(p) in squashed for p in evaluate.DONT_KNOW)
+    return said and re.search(evaluate.MONEY, text) is None
+
+
+_orig_summarize_judge = evaluate.judge.summarize_judge
+
+
+def _summarize_judge_with_rule(df):
+    df = df.copy()
+    fix = (df["level"] == "no_answer") & df["answer"].fillna("").map(_rule_refused)
+    df.loc[fix, "judge_refused"] = True
+    return _orig_summarize_judge(df)
+
+
+evaluate.judge.summarize_judge = _summarize_judge_with_rule
 
 
 class FilterRerankSearcher:

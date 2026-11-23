@@ -417,10 +417,12 @@ def warmup():
     """모델, DB, 리랭커를 미리 불러오고 한 번 호출 (첫 문항 응답시간에 로딩 시간이 섞이지 않게)"""
     model, vector_store = get_resources()
     get_exact_index()
-    vector_store.embeddings.embed_query("워밍업")
     if RERANK:
-        get_reranker().predict([("워밍업", "워밍업")], batch_size=1)
+        get_reranker()
     model.invoke("안녕")
+    # 실제 질문 하나로 전체 흐름 실행: 사업명 사전, 임베딩, 리랭크 30개, 긴 입력 생성까지 미리 거침
+    get_graph().invoke({"question": QUESTIONS[0], "history": []})
+    SEARCH_TIMES.clear()  # 워밍업 검색 시간은 기록에서 제외
 
 
 def get_exact_index():
@@ -727,6 +729,13 @@ def retrieve(state: RAGState):
 _COMPLEX_Q = re.compile(
     r"비교|차이|모두|전부|모든|몇\s*개|합계|총|가장|제일|제출서류|구비서류|제출문서|목록"
 )
+_THINK_Q = re.compile(
+    r"몇\s*개|합계|총"
+)  # 추가: 생각 모드가 필요한 질문 (개수·합계 계산)
+_DOCS_Q = re.compile(r"(제출|구비|등록)\s*서류|제출\s*문서")  # 서류 목록을 묻는 질문
+_DOCS_CTX = re.compile(
+    r"(제출|구비|등록)\s*서류|제출\s*문서"
+)  # 조각에 서류 항목이 있는지
 _REFUSE_MSG = "제공된 공고 문서에 해당 정보가 없어 답변할 수 없습니다."
 _REFUSE_HEAD = re.compile(
     r"(확인할\s*수\s*없|찾을\s*수\s*없|정보가\s*없|포함되지\s*않|포함되어\s*있지\s*않|입찰공고문[”\"'\s]*에\s*(따릅|의함))"
@@ -741,10 +750,22 @@ def generate(state: RAGState):
         if top1_score < RERANK_CUTOFF:
             return {"answer": _REFUSE_MSG, "prompt_tokens": 0}
     model, _ = get_resources()
-    if ADAPTIVE_THINK and THINK and state["retrieved"]:
-        top1_score = -state["retrieved"][0][1]
-        if top1_score >= 0.955 and not _COMPLEX_Q.search(state["question"]):
-            model = get_fast_model()
+    # 추가: 서류를 묻는데 검색된 조각에 서류 항목 자체가 없으면 LLM 호출 없이 거절 (목록 지어내기 방지)
+    if _DOCS_Q.search(state["question"]) and not _DOCS_CTX.search(
+        format_context(state["retrieved"])
+    ):
+        return {"answer": _REFUSE_MSG, "prompt_tokens": 0}
+    # if ADAPTIVE_THINK and THINK and state["retrieved"]:
+    #     top1_score = -state["retrieved"][0][1]
+    #     if top1_score >= 0.955 and not _COMPLEX_Q.search(state["question"]):
+    #         model = get_fast_model()
+    if (
+        ADAPTIVE_THINK
+        and THINK
+        and state["retrieved"]
+        and not _THINK_Q.search(state["question"])
+    ):  # 변경. 개수·합계 질문이 아니면 빠른 모델 (점수 기준 제거)
+        model = get_fast_model()  # 변경
     messages = [
         SystemMessage(load_prompt(RAG_PROMPT)),
         *history_to_messages(state.get("history")),
