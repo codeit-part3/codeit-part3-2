@@ -13,7 +13,7 @@ services:
       - BACKEND_URL=http://136.111.105.21:8000
     depends_on:
       backend:
-        condition: service_completed_successfully
+        condition: service_healthy
 
   backend:
     build:
@@ -31,6 +31,12 @@ services:
       - indexes:/root/app/indexes
       - guide_cache:/root/app/outputs/guides/_cache
       - hf_cache:/root/.cache/huggingface
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.reqeust.ullopen('http://localhost:8000/docs')"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
     depends_on:
       ollama-pull:
         condition: service_completed_successfully
