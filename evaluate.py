@@ -143,6 +143,9 @@ def squash(text):
 
 
 def contains(squashed_text, keyword):
+    # 골든셋 키워드에 "A|B" 처럼 | 로 동의어를 적으면 그중 하나만 있어도 인정 (v2_4 부터, q16)
+    if "|" in str(keyword):
+        return any(contains(squashed_text, k) for k in str(keyword).split("|"))
     key = squash(keyword)
     if key.isdigit():
         # 숫자는 앞뒤에 다른 숫자가 붙지 않은 경우만 인정 (6 이 165 에 걸리지 않게)
@@ -150,19 +153,44 @@ def contains(squashed_text, keyword):
     return key in squashed_text
 
 
+PARTIAL = 0.5  # 부분 정답 점수 (골든셋에 partial_keywords 가 있는 문항만, v2_4 부터)
+
+
+def _partial(item, squashed):
+    """정답이 아닐 때 partial_keywords 중 하나라도 있으면 부분 정답"""
+    keys = item.get("partial_keywords") or []
+    return any(contains(squashed, k) for k in keys)
+
+
 def score(item, answer):
-    """자동 채점 -> (정답 여부, 빠진 키워드, keyword_recall, 모름 판정 표현)"""
+    """자동 채점 -> (정답 여부, 빠진 키워드, keyword_recall, 모름 판정 표현)
+
+    정답 여부: True(정답) / False(오답) / 0.5(부분 정답, partial_keywords 가 있는 문항만)
+    """
     squashed = squash(answer)
 
     if item["level"] == "no_answer":
         matched = [p for p in DONT_KNOW if squash(p) in squashed]
         made_up_money = re.search(MONEY, answer) is not None
-        return bool(matched) and not made_up_money, [], None, ", ".join(matched)
+        ok = bool(matched) and not made_up_money
+        if not ok and _partial(item, squashed):
+            ok = PARTIAL
+        return ok, [], None, ", ".join(matched)
 
     wanted = list(item["keywords"]) + [str(v) for v in item["answer_values"]]
     missing = [w for w in wanted if not contains(squashed, w)]
     recall = (len(wanted) - len(missing)) / len(wanted) if wanted else None
-    return len(missing) == 0, missing, recall, ""
+    ok = len(missing) == 0
+    if not ok and _partial(item, squashed):
+        ok = PARTIAL
+    return ok, missing, recall, ""
+
+
+def mark(correct):
+    """문항별 표시: O(정답) / △(부분 정답) / X(오답)"""
+    if correct is True:
+        return "O"
+    return "△" if correct else "X"
 
 
 # =====================================================================
@@ -291,11 +319,14 @@ def run_eval(golden, answer_fn, file_to_notice, version, result_path, engine=Non
             )
         else:
             correct, missing, recall, unknown = score(item, answer)
-            cause = "" if correct else guess_cause(item, retrieved, wanted_ids)
+            if correct is True:
+                cause = ""
+            elif correct:
+                cause = "부분 정답"
+            else:
+                cause = guess_cause(item, retrieved, wanted_ids)
 
-        print(
-            f"[{item['id']}] {'O' if correct else 'X'} ({item['level']}, {seconds}초)"
-        )
+        print(f"[{item['id']}] {mark(correct)} ({item['level']}, {seconds}초)")
 
         rows.append(
             {
