@@ -11,7 +11,7 @@ services:
     env_file:
       - .env
     environment:
-      - BACKEND_URL=http://136.111.105.21:8000
+      - BACKEND_URL=http://backend:8000
     depends_on:
       backend:
         condition: service_healthy
@@ -33,7 +33,7 @@ services:
       - guide_cache:/root/app/outputs/guides/_cache
       - hf_cache:/root/.cache/huggingface
     healthcheck:
-      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/docs')"]
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')"]
       interval: 5s
       timeout: 5s
       retries: 10
@@ -51,6 +51,8 @@ services:
       dockerfile: Dockerfile
       target: hf-pull
     container_name: gguk-hf-pull
+    environment:
+      - HF_HOME=/root/.cache/huggingface
     volumes:
       - hf_cache:/root/.cache/huggingface
 
