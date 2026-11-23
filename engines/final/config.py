@@ -103,7 +103,7 @@ MULTI_ENTITY_SEARCH = (
 # 데이터 (팀 기준과 동일)
 # =====================================================================
 CORPUS = "clean_mixed_ocr_v2"
-GOLDEN_FILE = "data/golden/rahui_golden_set_v2_2.json"
+GOLDEN_FILE = "data/golden/rahui_golden_set_v2_4.json"  # 11/23 v2_4 (73문항, #44)
 GOLDEN_EXCLUDE = {}
 
 # =====================================================================
