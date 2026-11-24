@@ -6,7 +6,7 @@ ENGINES_IDS는 app.py의 ENGINES 목록 id와 반드시 같아야 합니다.
 
 import importlib
 
-ENGINE_IDS: tuple[str, ...] = ("rerank_rag", "openai_rag")
+ENGINE_IDS: tuple[str, ...] = ("local_model", "final", "final_writer")
 
 
 def is_valid_engine(engine_id: str) -> bool:
