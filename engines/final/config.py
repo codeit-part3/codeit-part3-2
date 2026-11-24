@@ -92,9 +92,11 @@ RERANK_CUTOFF = (
     0.5  # 예) 0.5 -> 리랭커 1등 점수가 이 값보다 낮으면 LLM호출 없이 문서에 없다고 답변
 )
 ADAPTIVE_TOPK = True  # True면 1~3등 유지, 4~5등은 리랭커 점수 0.5 이상일 때만 포함
-TYPO_FIX = (
-    False  # True면 검색어에서 기관명·공공입찰 용어 오타를 사전 기반으로 자동 교정
-)
+# 검색어 오타 교정. False: 끔(기본) / True: 기존 팀 교정 / "query_fix": 기관명·사업명 사전 교정 (#38, 주희님)
+# 환경변수 FINAL_TYPO_FIX 로 바꿀 수 있음: off / team / query_fix
+TYPO_FIX = {"off": False, "team": True, "query_fix": "query_fix"}[
+    os.getenv("FINAL_TYPO_FIX", "off")
+]
 ADAPTIVE_THINK = (
     PROVIDER == "ollama" and ADAPTIVE_RULE != "off"
 )  # final: ADAPTIVE_RULE 로 정함 (클라우드는 항상 꺼짐). True면 확실한 단일문서 단순 조회만 think=False(초고속), 복잡/종합 질문은 think=True
