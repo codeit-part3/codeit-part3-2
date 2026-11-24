@@ -26,8 +26,9 @@ import pandas as pd
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT))
 
-import evaluate  # noqa: E402
 from engines.local_model import baseline  # noqa: E402
+
+import evaluate  # noqa: E402
 
 GOLDEN = ROOT / "data" / "golden" / "rahui_golden_set_v2_2.json"
 RERANKER = "BAAI/bge-reranker-v2-m3"

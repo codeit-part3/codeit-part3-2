@@ -31,9 +31,9 @@ sys.path.insert(0, str(ROOT))
 sys.path.insert(0, str(HERE))
 
 from agency_filter import RERANKER, build_agency_index, find_agencies  # noqa: E402
+from engines.local_model import baseline  # noqa: E402
 
 import evaluate  # noqa: E402
-from engines.local_model import baseline  # noqa: E402
 
 # 추가: 채점 규칙 보강: evaluate.py 는 그대로 두고, 이 파일로 실행할 때만 적용
 # "사업예산은 비공개" 처럼 금액이 공개되지 않았다고 답한 경우를 거절로 인정 (q43 골든셋 정답 기준)

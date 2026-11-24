@@ -204,9 +204,8 @@ def main() -> int:
 
     model = None
     if not a.dry and not a.api:
-        from langchain.messages import HumanMessage, SystemMessage
-
         from engines.rerank_rag import baseline
+        from langchain.messages import HumanMessage, SystemMessage
 
         if a.model:
             from langchain.chat_models import init_chat_model
