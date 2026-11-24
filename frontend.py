@@ -68,9 +68,9 @@ FORCE_LIGHT_JS = """
 
 # (engine_id, 탭 이름, 소개). engine_id 는 백엔드 config.ENGINE_IDS 와 글자까지 같아야 합니다.
 ENGINES = [
-    ("local_model", "local_model", "gemma4:3b 기반 로컬 모델"),
+    # ("local_model", "local_model", "gemma4:3b 기반 로컬 모델"),
     ("rerank_rag", "rerank_rag", "rerank_rag"),
-    # ("openai_rag", "openai_rag", "RAG(base: openAI model)"),
+    ("openai_rag", "openai_rag", "RAG(base: openAI model)"),
 ]
 
 
@@ -79,7 +79,7 @@ def call_backend(engine_id: str, session_id: str, message: str) -> str:
     url = f"{BACKEND_URL}/chat/"
     headers = {
         "X-API-KEY": X_API_KEY
-    }  # HTTP 헤더는 _를 -로 변환해서 읽기 때문에, 연결문자로 -를 사용했습니다.
+    }  # HTTP 헤더는 _를 -로 변환해서 읽    기 때문에, 연결문자로 -를 사용했습니다.
     request_body = {
         "engine_id": engine_id,
         "session_id": session_id,
