@@ -1,7 +1,7 @@
 """질문 오타 보정: 기관명·사업명 사전 교정 (rerank_rag 엔진용, 이슈 #38 오타 강건성)
 
 final 엔진(#43): engines/rerank_rag/query_fix.py 를 그대로 복사함 (원본 수정 없음, Docker 이미지에 엔진 폴더만 들어가서 복사).
-final 에서는 config.TYPO_FIX = "query_fix" (환경변수 FINAL_TYPO_FIX=query_fix) 일 때만 쓰인다.
+final 에서는 config.TYPO_FIX = "query_fix" 일 때 쓰인다.
 
 baseline.py 의 fix_typos() 가 TYPO_FIX = "query_fix" 일 때 검색 직전에 부른다.
 Docker 이미지에는 engines/ 만 들어가므로 엔진이 쓰는 교정 코드는 엔진 폴더 안에 둔다.
