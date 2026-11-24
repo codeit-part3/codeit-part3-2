@@ -4,13 +4,14 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
+      target: frontend
     container_name: gguk-frontend
     ports:
       - "7860:7860"
     env_file:
       - .env
     environment:
-      - BACKEND_URL=http://136.111.105.21:8000
+      - BACKEND_URL=http://backend:8000
     depends_on:
       backend:
         condition: service_healthy
@@ -32,29 +33,36 @@ services:
       - guide_cache:/root/app/outputs/guides/_cache
       - hf_cache:/root/.cache/huggingface
     healthcheck:
-      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/docs')"]
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')"]
       interval: 5s
       timeout: 5s
       retries: 10
-      start_period: 10s
+      start_period: 30s
     depends_on:
       ollama-pull:
         condition: service_completed_successfully
       hf-pull:
         condition: service_completed_successfully
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+
 
   # Download re-rank model
   hf-pull:
     build:
       context: .
-      dockerfile: backend/Dockerfile
+      dockerfile: Dockerfile
+      target: hf-pull
     container_name: gguk-hf-pull
     environment:
       - HF_HOME=/root/.cache/huggingface
     volumes:
       - hf_cache:/root/.cache/huggingface
-    command: uv run --no-sync python -c "from huggingface_hub import snapshot_download;
-            snapshot_download('BAAI/bge-reranker-v2-m3')"
 
   # Ollama 로컬 모델 서빙 서비스
   ollama:
@@ -69,6 +77,13 @@ services:
       interval: 5s
       timeout: 5s
       retries: 10
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
 
   # Ollama 모델 및 임베딩 벡터 다운로드
   ollama-pull:

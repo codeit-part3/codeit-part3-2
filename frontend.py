@@ -80,7 +80,7 @@ def call_backend(engine_id: str, session_id: str, message: str) -> str:
     url = f"{BACKEND_URL}/chat/"
     headers = {
         "X-API-KEY": X_API_KEY
-    }  # HTTP 헤더는 _를 -로 변환해서 읽기 때문에, 연결문자로 -를 사용했습니다.
+    }  # HTTP 헤더는 _를 -로 변환해서 읽    기 때문에, 연결문자로 -를 사용했습니다.
     request_body = {
         "engine_id": engine_id,
         "session_id": session_id,
