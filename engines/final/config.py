@@ -55,7 +55,9 @@ EMBED_MODEL = "embeddinggemma"
 NUM_CTX = 8192
 TEMPERATURE = 0
 SEED = 42
-THINK = True  # True: 생각 모드 켜기 (정확도·무환각 우선) / False: 끄기 (속도 우선)
+THINK = _flag(
+    "THINK", True
+)  # True: 생각 모드 켜기 (정확도·무환각 우선) / False: 끄기 (속도 우선)  (환경변수 FINAL_THINK 로 바꿀 수 있음)
 
 # =====================================================================
 # 조각과 검색
