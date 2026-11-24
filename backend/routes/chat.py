@@ -33,7 +33,6 @@ async def chat(request: ChatRequest):
             engine_id=request.engine_id,
             session_id=request.session_id,
             answer=model_resp["answer"],
-            retrieved=model_resp["retrieved"],
             history_length=len(history),
         )
     except Exception as e:
