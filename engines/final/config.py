@@ -1,89 +1,34 @@
-"""final 엔진 설정값 (openai_rag 기반 + 라희님 CORR, 동현님 수정을 스위치로 이식)
+"""final 엔진 설정값 (루나 키메라)
 
+최종 조건으로 고정 (11/24 실험 결과, #53 에서 실험용 프리셋과 환경변수 FINAL_* 제거):
+  답변 gpt-6-luna(low) + CORR_REFUSE, CORR_WON, DOCS_REFUSE, REAL_WARMUP, TYPO_FIX
 engines/local_model/config.py 와 같은 형식이고, 아래 '검색 방식' 항목이 추가되었다.
 비밀 값(API 키 등)은 .env 에 둔다.
 """
 
-import os
-
-
-def _flag(name, default=False):
-    """환경변수 FINAL_<name> 이 있으면 그 값(1/true/on), 없으면 기본값"""
-    v = os.getenv(f"FINAL_{name}")
-    if v is None:
-        return default
-    return v.strip().lower() in ("1", "true", "on", "yes")
-
-
 # =====================================================================
-# 프리셋 (11/24 실험 결과로 정한 최종 조합). 환경변수 FINAL_PRESET 으로 고른다. 기본은 루나 키메라.
-#   luna_chimera  (루나 키메라): 클라우드 gpt-6-luna(low) + CORR_REFUSE, CORR_WON, DOCS_REFUSE, REAL_WARMUP, TYPO_FIX
-#   local_chimera (로컬 키메라): 로컬 gemma4:e2b(생각 모드 끔) + CORR_REFUSE, CORR_WON, DOCS_REFUSE, REAL_WARMUP
-#   base          (기준선): 클라우드, 스위치 전부 꺼짐 (main 의 openai_rag 와 같은 동작)
-# 아래 각 스위치의 환경변수(FINAL_<이름>)를 주면 프리셋보다 그 값이 우선한다. 예) $env:FINAL_CORR_WON="0"
+# 기능 (True: 켬 / False: 끔)
 # =====================================================================
-PRESET = os.getenv("FINAL_PRESET", "luna_chimera")
-_PRESETS = {
-    "luna_chimera": {
-        "provider": "openai",
-        "think": True,
-        "on": ("CORR_REFUSE", "CORR_WON", "DOCS_REFUSE", "REAL_WARMUP", "TYPO_FIX"),
-    },
-    "local_chimera": {
-        "provider": "ollama",
-        "think": False,
-        "on": ("CORR_REFUSE", "CORR_WON", "DOCS_REFUSE", "REAL_WARMUP"),
-    },
-    "base": {"provider": "openai", "think": True, "on": ()},
-}
-_P = _PRESETS[PRESET]
-_ON = _P["on"]
-
-PROVIDER = os.getenv(
-    "FINAL_PROVIDER", _P["provider"]
-)  # "openai": 클라우드 / "ollama": 로컬
-CORR_REFUSE = _flag(
-    "CORR_REFUSE", "CORR_REFUSE" in _ON
-)  # 라희님 CORR: 입찰공고문 참조 거절, 비공개 거절, 성과품 오답 거절
-CORR_DOC_FILTER = _flag(
-    "CORR_DOC_FILTER", "CORR_DOC_FILTER" in _ON
-)  # 라희님 CORR: 단일 사업 질문에서 top1 고신뢰면 타 사업 조각 제거
+PROVIDER = "openai"  # "openai": 클라우드 / "ollama": 로컬
+CORR_REFUSE = True  # 라희님 CORR: 입찰공고문 참조 거절, 비공개 거절, 성과품 오답 거절
+CORR_DOC_FILTER = False  # 라희님 CORR: 단일 사업 질문에서 top1 고신뢰면 타 사업 조각 제거 (최종 조건에서 끔)
 CORR_DOC_FILTER_TOP1 = 0.995  # 위 기능이 작동하는 리랭커 1등 점수 기준
-CORR_WON = _flag(
-    "CORR_WON", "CORR_WON" in _ON
-)  # 라희님 CORR: "천원" 금액 옆에 원 환산값 병기
-DOCS_REFUSE = _flag(
-    "DOCS_REFUSE", "DOCS_REFUSE" in _ON
-)  # 동현님: 서류 질문인데 조각에 서류 항목이 없으면 LLM 없이 거절 (CORR_REFUSE 다음 순서)
-REAL_WARMUP = _flag(
-    "REAL_WARMUP", "REAL_WARMUP" in _ON
-)  # 동현님: 실제 질문 하나로 전체 흐름 워밍업
-ADAPTIVE_RULE = os.getenv(
-    "FINAL_ADAPTIVE_RULE", "off"
-)  # 로컬 전용 빠른 모델 규칙: "off" / "dh"(개수·합계 외 전부) / "corr"(top1 0.995 이상 + 단순 질문)
+CORR_WON = True  # 라희님 CORR: "천원" 금액 옆에 원 환산값 병기
+DOCS_REFUSE = True  # 동현님: 서류 질문인데 조각에 서류 항목이 없으면 LLM 없이 거절 (CORR_REFUSE 다음 순서)
+REAL_WARMUP = True  # 동현님: 실제 질문 하나로 전체 흐름 워밍업
+ADAPTIVE_RULE = "off"  # 로컬 전용 빠른 모델 규칙 (최종 조건에서 끔)
 ADAPTIVE_THINK_TOP1 = 0.995  # ADAPTIVE_RULE="corr" 의 점수 기준
 
 # =====================================================================
 # 모델
 # =====================================================================
-LOCAL_CHAT_MODEL = os.getenv(
-    "FINAL_LOCAL_MODEL", "gemma4:e2b"
-)  # PROVIDER="ollama" 일 때 답변 모델
-CHAT_MODEL = (
-    os.getenv("OPENAI_RAG_MODEL", "gpt-5-nano" if PRESET == "base" else "gpt-6-luna")
-    if PROVIDER == "openai"
-    else LOCAL_CHAT_MODEL
-)
-REASONING_EFFORT = os.getenv(
-    "OPENAI_RAG_EFFORT", "low"
-)  # OpenAI 노력 정도 (low / high)
+CHAT_MODEL = "gpt-6-luna"  # 답변 모델
+REASONING_EFFORT = "low"  # OpenAI 노력 정도
 EMBED_MODEL = "embeddinggemma"
 NUM_CTX = 8192
 TEMPERATURE = 0
 SEED = 42
-THINK = _flag(
-    "THINK", _P["think"]
-)  # True: 생각 모드 켜기 (정확도·무환각 우선) / False: 끄기 (속도 우선)  (환경변수 FINAL_THINK 로 바꿀 수 있음)
+THINK = True  # 생각 모드 켜기
 
 # =====================================================================
 # 조각과 검색
@@ -118,11 +63,7 @@ RERANK_CUTOFF = (
     0.5  # 예) 0.5 -> 리랭커 1등 점수가 이 값보다 낮으면 LLM호출 없이 문서에 없다고 답변
 )
 ADAPTIVE_TOPK = True  # True면 1~3등 유지, 4~5등은 리랭커 점수 0.5 이상일 때만 포함
-# 검색어 오타 교정. False: 끔(기본) / True: 기존 팀 교정 / "query_fix": 기관명·사업명 사전 교정 (#38, 주희님)
-# 환경변수 FINAL_TYPO_FIX 로 바꿀 수 있음: off / team / query_fix
-TYPO_FIX = {"off": False, "team": True, "query_fix": "query_fix"}[
-    os.getenv("FINAL_TYPO_FIX", "query_fix" if "TYPO_FIX" in _ON else "off")
-]
+TYPO_FIX = "query_fix"  # 검색어 오타 교정: 기관명, 사업명 사전 교정 (#38, 주희님)
 ADAPTIVE_THINK = (
     PROVIDER == "ollama" and ADAPTIVE_RULE != "off"
 )  # final: ADAPTIVE_RULE 로 정함 (클라우드는 항상 꺼짐). True면 확실한 단일문서 단순 조회만 think=False(초고속), 복잡/종합 질문은 think=True
