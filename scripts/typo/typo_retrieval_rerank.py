@@ -35,8 +35,12 @@ from pathlib import Path
 
 import pandas as pd
 
-ROOT = Path(__file__).resolve().parents[2]  # 프로젝트 루트 (scripts/typo/ 에서 두 단계 위)
-sys.path.insert(0, str(ROOT))  # 루트의 evaluate.py, engines/ 를 불러오기 위해 (팀 scripts/rerank_rag/ 와 같은 방식)
+ROOT = (
+    Path(__file__).resolve().parents[2]
+)  # 프로젝트 루트 (scripts/typo/ 에서 두 단계 위)
+sys.path.insert(
+    0, str(ROOT)
+)  # 루트의 evaluate.py, engines/ 를 불러오기 위해 (팀 scripts/rerank_rag/ 와 같은 방식)
 
 import evaluate  # noqa: E402  # 팀 공용 채점 함수 (retrieval_scores, context_hit 등) - 고치지 않고 불러만 씀
 from engines.local_model import baseline as local_baseline  # noqa: E402  # evaluate.load_golden 이 읽는 골든셋 경로
@@ -55,14 +59,25 @@ def use_query_fix(engine):
     sys.path.insert(0, str(Path(__file__).resolve().parent))  # 같은 폴더의 query_fix.py
     from query_fix import QueryFixer
 
-    engine.fix_typos = QueryFixer(data_list=engine.DATA_PATH, corpus_dir=engine.TXT_DIR).fix
-    print("[오타 교정] 엔진에 교정 코드가 없어 실행 중에만 scripts/typo/query_fix.py 를 끼웁니다")
+    engine.fix_typos = QueryFixer(
+        data_list=engine.DATA_PATH, corpus_dir=engine.TXT_DIR
+    ).fix
+    print(
+        "[오타 교정] 엔진에 교정 코드가 없어 실행 중에만 scripts/typo/query_fix.py 를 끼웁니다"
+    )
 
 
 def parse_args():
     p = argparse.ArgumentParser(description="리랭커 엔진 검색 강건성 측정 (검색만)")
-    p.add_argument("--golden", default=None, help="골든셋 경로 (기본: 엔진 config 의 GOLDEN_FILE)")
-    p.add_argument("--rerank", choices=["on", "off"], default="on", help="리랭커 켜기/끄기 (기본 on)")
+    p.add_argument(
+        "--golden", default=None, help="골든셋 경로 (기본: 엔진 config 의 GOLDEN_FILE)"
+    )
+    p.add_argument(
+        "--rerank",
+        choices=["on", "off"],
+        default="on",
+        help="리랭커 켜기/끄기 (기본 on)",
+    )
     p.add_argument(
         "--typo-fix",
         choices=["off", "on", "query_fix"],
@@ -86,12 +101,18 @@ def main():
 
     # ---- 2. 엔진 설정을 실행 중에만 바꿈 (config.py 파일은 그대로)
     rr.set_search(rerank=(args.rerank == "on"))
-    if args.typo_fix is not None:  # 안 주면 config.py 의 TYPO_FIX 를 그대로 씀 (엔진 기본 동작 확인용)
-        rr.TYPO_FIX = {"off": False, "on": True, "query_fix": "query_fix"}[args.typo_fix]
+    if (
+        args.typo_fix is not None
+    ):  # 안 주면 config.py 의 TYPO_FIX 를 그대로 씀 (엔진 기본 동작 확인용)
+        rr.TYPO_FIX = {"off": False, "on": True, "query_fix": "query_fix"}[
+            args.typo_fix
+        ]
     if rr.TYPO_FIX == "query_fix":
         use_query_fix(rr)
 
-    print(f"골든셋: {Path(golden_rel).name} ({len(golden)}문항) | 리랭커 {args.rerank} | 오타 교정 {rr.TYPO_FIX!r}")
+    print(
+        f"골든셋: {Path(golden_rel).name} ({len(golden)}문항) | 리랭커 {args.rerank} | 오타 교정 {rr.TYPO_FIX!r}"
+    )
     rr.get_resources()  # 벡터 DB 준비 (없으면 만듦)
     rr.get_exact_index()
     if rr.RERANK:
@@ -115,28 +136,35 @@ def main():
         # 리랭커를 쓰면 점수는 '-리랭커점수'로 저장돼 있다 (엔진 generate() 와 같은 방식으로 복원)
         top1 = -retrieved[0][1] if (retrieved and rr.RERANK) else None
         refused = bool(cutoff is not None and top1 is not None and top1 < cutoff)
-        details.append({
-            "id": item["id"],
-            "level": item["level"],
-            "question": item["question"],
-            "query_used": query,
-            "doc_hit": doc_hit,
-            "rr": rr_score,
-            "context_hit": evaluate.context_hit(item, retrieved),
-            "top1_score": None if top1 is None else round(top1, 4),
-            "cutoff_refuse": refused,
-            "n_chunks": len(retrieved),
-            "search_sec": sec,
-            "error": error,
-            "sources": " || ".join(f"{d.metadata.get('공고 번호')} {d.metadata.get('사업명')}" for d, _ in retrieved),
-        })
+        details.append(
+            {
+                "id": item["id"],
+                "level": item["level"],
+                "question": item["question"],
+                "query_used": query,
+                "doc_hit": doc_hit,
+                "rr": rr_score,
+                "context_hit": evaluate.context_hit(item, retrieved),
+                "top1_score": None if top1 is None else round(top1, 4),
+                "cutoff_refuse": refused,
+                "n_chunks": len(retrieved),
+                "search_sec": sec,
+                "error": error,
+                "sources": " || ".join(
+                    f"{d.metadata.get('공고 번호')} {d.metadata.get('사업명')}"
+                    for d, _ in retrieved
+                ),
+            }
+        )
 
     # ---- 4. 요약 (retrieval.py 와 같은 열 이름 -> typo_report.py 로 바로 비교 가능)
     det = pd.DataFrame(details)
     det.insert(0, "top_k", rr.TOP_K)
     det.insert(0, "chunk_overlap", rr.CHUNK_OVERLAP)
     det.insert(0, "chunk_size", rr.CHUNK_SIZE)
-    answerable = det[det["doc_hit"].notna()]  # 답이 있는 문항 (no_answer 는 doc_hit 이 비어 있음)
+    answerable = det[
+        det["doc_hit"].notna()
+    ]  # 답이 있는 문항 (no_answer 는 doc_hit 이 비어 있음)
     noanswer = det[det["doc_hit"].isna()]
     summary = {
         "engine": "rerank_rag",
@@ -150,13 +178,19 @@ def main():
         "hit_rate": evaluate.mean_or_none(det["doc_hit"]),
         "mrr": evaluate.mean_or_none(det["rr"]),
         "context_hit": evaluate.mean_or_none(det["context_hit"]),
-        "cutoff_refuse": round(float(answerable["cutoff_refuse"].mean()), 4) if len(answerable) else None,
-        "noans_refuse": round(float(noanswer["cutoff_refuse"].mean()), 4) if len(noanswer) else None,
+        "cutoff_refuse": round(float(answerable["cutoff_refuse"].mean()), 4)
+        if len(answerable)
+        else None,
+        "noans_refuse": round(float(noanswer["cutoff_refuse"].mean()), 4)
+        if len(noanswer)
+        else None,
         "search_sec": evaluate.mean_or_none(det["search_sec"]),
         "error_count": int((det["error"] != "").sum()),
     }
 
-    out_dir = ROOT / "outputs" / "typo"  # 오타 실험 결과는 outputs/typo/ 에 따로 모음 (팀 결과와 섞이지 않게)
+    out_dir = (
+        ROOT / "outputs" / "typo"
+    )  # 오타 실험 결과는 outputs/typo/ 에 따로 모음 (팀 결과와 섞이지 않게)
     out_dir.mkdir(parents=True, exist_ok=True)  # outputs/typo 폴더가 없으면 만듦
     stamp = f"{datetime.now():%Y%m%d_%H%M%S}"
     summary_path = out_dir / f"rerank_typo_{stamp}.csv"

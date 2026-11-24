@@ -603,6 +603,7 @@ def get_query_fixer():
         _query_fixer = QueryFixer(data_list=DATA_PATH, corpus_dir=TXT_DIR)
     return _query_fixer
 
+
 def fix_typos(question):
     """검색어에서 발주 기관명·사업 핵심어·공공입찰 용어의 한글 자모 오타를 교정"""
     if not TYPO_FIX:

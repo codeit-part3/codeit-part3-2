@@ -39,7 +39,11 @@ def main():
         from query_fix import QueryFixer
 
         eng.fix_typos = QueryFixer(data_list=eng.DATA_PATH, corpus_dir=eng.TXT_DIR).fix
-    where = "엔진 baseline.py 코드" if hasattr(eng, "get_query_fixer") else f"실행 중 끼움 ({eng.fix_typos.__qualname__})"
+    where = (
+        "엔진 baseline.py 코드"
+        if hasattr(eng, "get_query_fixer")
+        else f"실행 중 끼움 ({eng.fix_typos.__qualname__})"
+    )
     print(f"[run_eval_typo] TYPO_FIX = {eng.TYPO_FIX!r} | 교정 = {where}")
 
     import run_eval  # noqa: E402

@@ -24,17 +24,22 @@ import re  # 질문에서 따옴표 안 사업명을 찾기 위해 (정규식)
 from pathlib import Path  # 운영체제(맥/윈도우)에 상관없이 경로를 다루기 위해
 
 import pandas as pd  # data_list.csv 를 읽고 기록 csv 를 쓰기 위해
-
 from hangul_typo import add_typos, is_syllable, make_rng  # 오타를 실제로 만드는 부품
 
 # =====================================================================
 # 설정
 # =====================================================================
-BASE_DIR = Path(__file__).resolve().parents[2]  # 프로젝트 루트 (scripts/typo/ 에서 두 단계 위)
+BASE_DIR = (
+    Path(__file__).resolve().parents[2]
+)  # 프로젝트 루트 (scripts/typo/ 에서 두 단계 위)
 DEFAULT_GOLDEN = "data/golden/rahui_golden_set_v2_2.json"
 DEFAULT_SEED = 42  # 기본 seed. 이 seed 로 만든 파일은 이름에 seed 를 붙이지 않는다 (처음 만든 파일과 이름 유지)  # 원본 골든셋 (config.py 의 GOLDEN_FILE 과 같음)
-DATA_LIST = BASE_DIR / "data" / "data_list.csv"  # 문서 100건 목록 (발주 기관 이름을 가져옴)
-OUT_DIR = BASE_DIR / "data" / "golden" / "typo"  # 결과를 저장할 폴더 (원본 골든셋과 섞이지 않게 따로)
+DATA_LIST = (
+    BASE_DIR / "data" / "data_list.csv"
+)  # 문서 100건 목록 (발주 기관 이름을 가져옴)
+OUT_DIR = (
+    BASE_DIR / "data" / "golden" / "typo"
+)  # 결과를 저장할 폴더 (원본 골든셋과 섞이지 않게 따로)
 
 # 오타를 넣지 않는 문항 유형과 그 이유
 SKIP_LEVELS = {
@@ -50,7 +55,9 @@ TYPO_COUNT = {
     "heavy": lambda n_syll: max(3, round(n_syll * 0.2)),  # 일부러 세게: 20%, 적어도 3개
 }
 
-MIN_QUOTED_LEN = 6  # 따옴표 안이 6글자 이상일 때만 사업명으로 봄 ('5. 종합의견' 같은 짧은 인용 제외)
+MIN_QUOTED_LEN = (
+    6  # 따옴표 안이 6글자 이상일 때만 사업명으로 봄 ('5. 종합의견' 같은 짧은 인용 제외)
+)
 
 
 # =====================================================================
@@ -62,11 +69,15 @@ def load_org_names():
     긴 것부터 찾는 이유: '한국철도공사 (용역)'과 '한국철도공사'가 둘 다 있을 때 긴 쪽을 먼저 잡아야
     기관명 전체에 오타가 들어갈 수 있다.
     """
-    orgs = set(pd.read_csv(DATA_LIST)["발주 기관"].dropna().astype(str))  # 빈칸 제거 후 중복 없이
+    orgs = set(
+        pd.read_csv(DATA_LIST)["발주 기관"].dropna().astype(str)
+    )  # 빈칸 제거 후 중복 없이
     # '한국철도공사 (용역)'처럼 끝에 괄호가 붙은 이름은 괄호를 뗀 이름도 추가 (질문에는 괄호 없이 나오기도 함)
     orgs |= {re.sub(r"\s*\(.*?\)\s*$", "", name) for name in orgs}
     # key=(-길이, 이름): 길이가 긴 것부터, 길이가 같으면 가나다순 -> 실행할 때마다 순서가 같다
-    return sorted((name for name in orgs if len(name) >= 2), key=lambda name: (-len(name), name))
+    return sorted(
+        (name for name in orgs if len(name) >= 2), key=lambda name: (-len(name), name)
+    )
 
 
 def typo_positions(question, orgs):
@@ -99,10 +110,14 @@ def typo_positions(question, orgs):
 # =====================================================================
 def make_typo_set(items, level, orgs, seed):
     """원본 문항 목록 -> (오타 문항 목록, 기록 행 목록)"""
-    rng = make_rng(f"{seed}-{level}")  # 세기마다 다른 seed -> light 와 heavy 의 오타가 서로 독립
+    rng = make_rng(
+        f"{seed}-{level}"
+    )  # 세기마다 다른 seed -> light 와 heavy 의 오타가 서로 독립
     out, log = [], []
     for item in items:
-        question = item.get("question") or ""  # 질문이 비어 있는 문항도 오류 없이 지나가게
+        question = (
+            item.get("question") or ""
+        )  # 질문이 비어 있는 문항도 오류 없이 지나가게
         if item.get("level") in SKIP_LEVELS or not question:
             new_question, ops = question, []  # 오타 없이 그대로
         else:
@@ -118,24 +133,34 @@ def make_typo_set(items, level, orgs, seed):
         new_item["typo_ops"] = ops
         out.append(new_item)
 
-        log.append({
-            "typo_level": level,
-            "id": item["id"],
-            "level": item.get("level"),
-            "n_typos": len(ops),
-            "ops": ",".join(ops),
-            "question_original": question,
-            "question_typo": new_question,
-        })
+        log.append(
+            {
+                "typo_level": level,
+                "id": item["id"],
+                "level": item.get("level"),
+                "n_typos": len(ops),
+                "ops": ",".join(ops),
+                "question_original": question,
+                "question_typo": new_question,
+            }
+        )
     return out, log
 
 
 def main():
     # ---- 명령어 옵션 읽기
-    parser = argparse.ArgumentParser(description="질문에 오타를 넣은 골든셋을 만듭니다.")
-    parser.add_argument("--golden", default=DEFAULT_GOLDEN, help="원본 골든셋 경로 (프로젝트 루트 기준)")
-    parser.add_argument("--levels", nargs="+", default=list(TYPO_COUNT), choices=list(TYPO_COUNT))
-    parser.add_argument("--seed", type=int, default=DEFAULT_SEED, help="같은 seed 면 같은 오타가 나옴")
+    parser = argparse.ArgumentParser(
+        description="질문에 오타를 넣은 골든셋을 만듭니다."
+    )
+    parser.add_argument(
+        "--golden", default=DEFAULT_GOLDEN, help="원본 골든셋 경로 (프로젝트 루트 기준)"
+    )
+    parser.add_argument(
+        "--levels", nargs="+", default=list(TYPO_COUNT), choices=list(TYPO_COUNT)
+    )
+    parser.add_argument(
+        "--seed", type=int, default=DEFAULT_SEED, help="같은 seed 면 같은 오타가 나옴"
+    )
     args = parser.parse_args()
 
     # ---- 준비
@@ -153,15 +178,23 @@ def main():
         seed_tag = "" if args.seed == DEFAULT_SEED else f"_s{args.seed}"
         out_path = OUT_DIR / f"{golden_path.stem}_typo_{level}{seed_tag}.json"
         # ensure_ascii=False: 한글을 \uXXXX 로 바꾸지 않고 그대로 저장 (사람이 열어 읽을 수 있게)
-        out_path.write_text(json.dumps(typo_items, ensure_ascii=False, indent=1), encoding="utf-8")
+        out_path.write_text(
+            json.dumps(typo_items, ensure_ascii=False, indent=1), encoding="utf-8"
+        )
         changed = sum(1 for it in typo_items if it["typo_ops"])
-        print(f"[{level}] 오타 넣은 문항 {changed}/{len(typo_items)} -> {out_path.relative_to(BASE_DIR)}")
+        print(
+            f"[{level}] 오타 넣은 문항 {changed}/{len(typo_items)} -> {out_path.relative_to(BASE_DIR)}"
+        )
 
     # ---- 기록 csv (utf-8-sig: 엑셀에서 열어도 한글이 깨지지 않게)
-    log_path = OUT_DIR / ("typo_log.csv" if args.seed == DEFAULT_SEED else f"typo_log_s{args.seed}.csv")
+    log_path = OUT_DIR / (
+        "typo_log.csv" if args.seed == DEFAULT_SEED else f"typo_log_s{args.seed}.csv"
+    )
     pd.DataFrame(all_logs).to_csv(log_path, index=False, encoding="utf-8-sig")
     print(f"문항별 기록: {log_path.relative_to(BASE_DIR)}")
 
 
-if __name__ == "__main__":  # 이 파일을 직접 실행했을 때만 main() 을 부름 (다른 파일이 import 할 땐 안 부름)
+if (
+    __name__ == "__main__"
+):  # 이 파일을 직접 실행했을 때만 main() 을 부름 (다른 파일이 import 할 땐 안 부름)
     main()
