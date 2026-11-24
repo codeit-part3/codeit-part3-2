@@ -13,6 +13,7 @@
 #   - 원본에서 바뀐 곳: ① import 3줄  ② PROGRESS_CSS_PATH 1줄  ③ 새 함수 묶음 추가
 #                       ④ build_app 의 make_chat_fn(...) 을 with_ui_extras(make_chat_fn(...)) 로 감쌈 1곳
 #                       ⑤ launch 의 css_paths 에 PROGRESS_CSS_PATH 추가, allowed_paths 추가
+#                       ⑥ 표·깨진 글머리 기호 화면용 정리(tidy_tables) 추가, _decorate_answer 1줄 수정 (표 모양 CSS 는 style.css 맨 아래)
 # =============================================================================
 import os
 
@@ -68,9 +69,9 @@ FORCE_LIGHT_JS = """
 
 # (engine_id, 탭 이름, 소개). engine_id 는 백엔드 config.ENGINE_IDS 와 글자까지 같아야 합니다.
 ENGINES = [
-    # ("local_model", "local_model", "gemma4:3b 기반 로컬 모델"),
-    ("rerank_rag", "rerank_rag", "rerank_rag"),
-    ("openai_rag", "openai_rag", "RAG(base: openAI model)"),
+    ("local_model", "local_model", "gemma4:3b 기반 로컬 모델"),  # 로컬파이널로교체예정
+    ("final", "final", "최종 엔진 (검색 답변)"),  # 파이널
+    ("final_writer", "작성 도우미", "가이드·서식·검색 답변"),  # 파이널Writer
 ]
 
 
@@ -262,7 +263,7 @@ def prettify_answer(answer: str, has_file_link: bool) -> str:
 def _decorate_answer(answer: str) -> str:
     """원본 chat 이 돌려준 답변 글을 화면에 보일 글로 바꿉니다 (정리 + 다운로드 링크 붙이기)."""
     files = find_download_files(answer)  # 파일 찾기는 원본 answer 로
-    shown = prettify_answer(answer, bool(files))
+    shown = tidy_tables(prettify_answer(answer, bool(files)))  # [수정 ⑥] 표 정리 추가
     shown = shown.replace(
         "**", ""
     )  # 굵게 표시(**)가 '…)**입니다'처럼 한글 앞에서 그대로 보이는 것을 막습니다.
@@ -316,6 +317,31 @@ def with_ui_extras(chat_fn):
 
 
 # [수정 끝 ③]
+
+
+# [수정 시작 ⑥] 표·글머리 기호 화면용 정리 (화면에 보일 때만 적용, 백엔드의 대화 기록과 답변 원본은 그대로)
+#   1) 원문 OCR 의 깨진 글머리 기호(사설 영역 문자)를 • 로 바꿉니다.
+#   2) 표 바로 앞의 "[표] 단 계 | 과 업 | ..." 글자 줄을 지웁니다.
+#   (표 칸 모양 CSS 는 style.css 맨 아래에 있습니다)
+_PUA_CH = "[\ue000-\uf8ff\U000f0000-\U000ffffd]"
+_PUA = re.compile(r"[ \t]*" + _PUA_CH + r"[ \t]*")
+_PUA_ONLY_CELL = re.compile(r"\|[ \t]*" + _PUA_CH + r"+[ \t]*(?=\|)")
+_TABLE_TAG = re.compile(r"(?m)^[ \t]*\[표\][^\n]*\n+(?=[ \t]*\|)")
+
+
+def tidy_tables(text: str) -> str:
+    for _ in range(
+        3
+    ):  # 칸에 깨진 기호만 있으면 빈 칸으로 (연속된 칸도 처리하려고 여러 번)
+        text = _PUA_ONLY_CELL.sub("| ", text)
+    text = _TABLE_TAG.sub(
+        "", text
+    )  # 표 바로 앞의 "[표] 단 계 | 과 업 | ..." 글자 줄 삭제
+    text = _PUA.sub(" • ", text)  # 남은 깨진 글머리 기호 → •
+    return re.sub(r"\n{3,}", "\n\n", text)
+
+
+# [수정 끝 ⑥]
 
 
 def build_app():
