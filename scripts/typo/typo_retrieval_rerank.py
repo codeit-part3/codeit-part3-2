@@ -42,9 +42,10 @@ sys.path.insert(
     0, str(ROOT)
 )  # 루트의 evaluate.py, engines/ 를 불러오기 위해 (팀 scripts/rerank_rag/ 와 같은 방식)
 
-import evaluate  # noqa: E402  # 팀 공용 채점 함수 (retrieval_scores, context_hit 등) - 고치지 않고 불러만 씀
 from engines.local_model import baseline as local_baseline  # noqa: E402  # evaluate.load_golden 이 읽는 골든셋 경로
 from engines.rerank_rag import baseline as rr  # noqa: E402  # 리랭커 엔진
+
+import evaluate  # noqa: E402  # 팀 공용 채점 함수 (retrieval_scores, context_hit 등) - 고치지 않고 불러만 씀
 
 
 def use_query_fix(engine):

@@ -19,9 +19,9 @@ import time
 from datetime import datetime
 
 import pandas as pd
+from engines.local_model import baseline
 
 import evaluate
-from engines.local_model import baseline
 
 EMBED_METHOD = "ollama"  # 임베딩 방식 (선택 옵션은 다음 작업에서 추가)
 SHEET_METRICS = ("hit_rate", "mrr", "context_hit", "search_sec")

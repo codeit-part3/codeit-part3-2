@@ -19,9 +19,8 @@ import numpy as np
 ROOT = Path(__file__).resolve().parents[2]  # 프로젝트 루트
 sys.path.insert(0, str(ROOT))
 
-from langchain.messages import HumanMessage, SystemMessage  # noqa: E402
-
 from engines.local_model import baseline as b  # noqa: E402
+from langchain.messages import HumanMessage, SystemMessage  # noqa: E402
 
 GOLDEN = ROOT / "data" / "golden" / "rahui_golden_set_v2_2.json"
 

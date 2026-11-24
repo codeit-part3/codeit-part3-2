@@ -25,10 +25,10 @@ import unicodedata
 from datetime import datetime
 
 import pandas as pd
+from engines.local_model import baseline
 from langchain.messages import HumanMessage
 
 import judge
-from engines.local_model import baseline
 
 # 골든셋의 level 을 4개 유형으로 묶습니다. (팀 집계 방식 초안)
 GROUPS = {
