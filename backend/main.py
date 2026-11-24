@@ -13,7 +13,7 @@ async def lifespan(app: FastAPI):
     # 서버 시작 시 graph warmup
     logger.info("[엔진 로딩 시작]")
     await asyncio.gather(
-        load_engine("local_model"),  # local_final로 교체 예정
+        load_engine("local_final"),
         load_engine("final"),
     )
     logger.info("[엔진 로딩 완료]")
