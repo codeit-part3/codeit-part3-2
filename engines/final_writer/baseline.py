@@ -13,6 +13,7 @@ writer 의 그래프는 "retrieved" 를 돌려주지 않아 그대로 연결하�
 
 import os
 import re
+import threading
 
 from engines.final import baseline as _base
 from engines.final import writer as _writer
@@ -90,8 +91,30 @@ def _format_context(retrieved):
 _base.format_context = _format_context  # baseline 의 retrieve/generate 가 이 이름을 불러 씁니다 (임시, 메모리에서만)
 
 
+# [백엔드 참고] final / final_writer 는 같은 모델·DB·리랭커(final.baseline._resources)를 공유한다.
+# 웜업(시험 호출)이 두 번 돌지 않게, final 의 warmup 을 "한 번만" 돌도록 감싼다.
+# 하나씩 load_engine 하면 순서와 상관없이 시험 호출은 한 번만 돌고, 시작 시간이 늘지 않는다.
+_orig_warmup = _base.warmup
+_warm_lock = threading.Lock()
+_warmed = False
+
+
+def _warmup_once():
+    global _warmed
+    with _warm_lock:
+        if _warmed:
+            return
+        if not _base._resources:  # 이미 올라와 있으면(공유 보관함이 차 있으면) 건너뜀
+            _orig_warmup()  # 채팅 모델, 빠른 모델, 인덱스, 임베딩, 리랭커
+        _warmed = True
+
+
+_base.warmup = _warmup_once  # engine_loader 가 final.baseline.warmup 을 불러도 한 번만 돈다 (메모리에서만)
+
+
 def warmup():
-    _base.warmup()  # 채팅 모델, 빠른 모델, 인덱스, 임베딩, 리랭커
+    _warmup_once()
+    _writer.get_graph()  # 작성 도우미 그래프를 미리 만들어 둠 (생성은 수십 ms)
 
 
 class _WriterGraph:
