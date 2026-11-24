@@ -29,6 +29,7 @@ services:
       - HF_HOME=/root/.cache/huggingface
       - OLLAMA_BASE_URL=http://ollama:11434
     volumes:
+      - data:/root/app/data
       - indexes:/root/app/indexes
       - guide_cache:/root/app/outputs/guides/_cache
       - hf_cache:/root/.cache/huggingface
@@ -106,5 +107,6 @@ volumes:
   ollama_data:
   hf_cache:
   # mounted data
+  data:
   indexes:
   guide_cache:
