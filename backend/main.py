@@ -12,7 +12,7 @@ from backend.services.engine_loader import load_engine
 async def lifespan(app: FastAPI):
     # 서버 시작 시 graph warmup
     logger.info("[엔진 로딩 시작]")
-    await asyncio.gather(load_engine("local_model"), load_engine("openai_rag"))
+    await asyncio.gather(load_engine("local_model"), load_engine("rerank_rag"))
     logger.info("[엔진 로딩 완료]")
     yield
 
