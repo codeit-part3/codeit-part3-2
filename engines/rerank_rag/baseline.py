@@ -593,11 +593,25 @@ _JOSA = re.compile(
     r"(에서|으로|까지|부터|은|는|이|가|을|를|의|에|로|과|와|도|만|[?!.,]+)+$"
 )
 
+_query_fixer = None
+
+
+def get_query_fixer():
+    """[이슈 #38] engines/rerank_rag/query_fix.py 의 교정기를 한 번만 만들어 재사용"""
+    global _query_fixer
+    if _query_fixer is None:
+        from engines.rerank_rag.query_fix import QueryFixer
+
+        _query_fixer = QueryFixer(data_list=DATA_PATH, corpus_dir=TXT_DIR)
+    return _query_fixer
+
 
 def fix_typos(question):
     """검색어에서 발주 기관명·사업 핵심어·공공입찰 용어의 한글 자모 오타를 교정"""
     if not TYPO_FIX:
         return question
+    if TYPO_FIX == "query_fix":
+        return get_query_fixer().fix(question)
     if "typo_vocab" not in _resources:
         _, docs = get_exact_index()
         vocab = set(_RFP_TERMS)
