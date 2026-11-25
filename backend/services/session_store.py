@@ -32,7 +32,7 @@ def add_turn(session_id: str, message: str, answer: str) -> None:
         {"role": ROLE_ASSISTANT, "content": answer},
     ]
     with lock:
-        history = load_history(session_id)
+        history = list(_chat_cache.get(session_id, []))
         history.extend(turn)
 
         _chat_cache[session_id] = history
