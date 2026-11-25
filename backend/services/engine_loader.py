@@ -38,7 +38,7 @@ async def load_engine(engine_id: str):
 
     except Exception as e:
         # 실패한 Task는 제외하여 다음 요청에서 다시 로딩하게 합니다.
-        if _engine_tasks.get(engine_id) is not None:
+        if _engine_tasks.get(engine_id) is task:
             del _engine_tasks[engine_id]
         logger.exception(f"{engine_id} 엔진을 로딩하는 데 실패했습니다")
         raise HTTPException(
