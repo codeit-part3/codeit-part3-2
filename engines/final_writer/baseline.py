@@ -117,8 +117,24 @@ def warmup():
     _writer.get_graph()  # 작성 도우미 그래프를 미리 만들어 둠 (생성은 수십 ms)
 
 
+# "제출서류 체크리스트를 만들어 줘" 는 writer 에 처리하는 길이 없어 일반 검색에서 "정보 없음"이 나왔다.
+# 가이드·서식 말이 없을 때만 "목록을 표로 정리해 줘" 로 바꿔 검색에 넣는다 (질문 문장만 바꿈, 그 밖은 그대로).
+_CHECKLIST = re.compile(
+    r"체크\s?리스트(?:를|을)?(?:\s*(?:만들어|작성해|짜))?\s*(?:줘|주세요|줄래)?[.?!]?"
+)
+_KEEP_WORDS = ("가이드", "초안", "서식", "양식", "별지")
+
+
+def _checklist_to_list(q):
+    if not isinstance(q, str) or "체크" not in q or any(w in q for w in _KEEP_WORDS):
+        return q
+    return _CHECKLIST.sub("목록을 표로 정리해 줘.", q)
+
+
 class _WriterGraph:
     async def ainvoke(self, inputs):
+        inputs = dict(inputs)
+        inputs["question"] = _checklist_to_list(inputs.get("question"))
         out = await _writer.get_graph().ainvoke(inputs)
         out = dict(out)
         out.setdefault("retrieved", [])
