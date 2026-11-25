@@ -17,7 +17,7 @@ preprocess = [
 backend = [
     "fastapi>=0.162.0",
     "loguru>=0.7.3",
-    "acachetools>=0.1.4",
+    "cachetools>=8.0.2",
 ]
 
 engines = [

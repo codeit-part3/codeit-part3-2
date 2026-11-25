@@ -17,18 +17,6 @@ resolution-markers = [
 ]
 
 [[package]]
-name = "acachetools"
-version = "0.1.4"
-source = { registry = "https://pypi.org/simple" }
-dependencies = [
-    { name = "cachetools" },
-]
-sdist = { url = "https://files.pythonhosted.org/packages/5d/cc/986b081e0a59cb0ca20c7ebd9fe33850075922a6e5a3b99277210c589423/acachetools-0.1.4.tar.gz", hash = "sha256:d190edb741ba2ad94e8f3460ec4f1ba6fa6b611b5bb64a5d6683793ce360969d", size = 2793, upload-time = "2026-09-02T07:24:48.011Z" }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/5d/c5/b1200a2217611441abf71c2409a1b2cae91d26d2538c6b7f7c42db68e382/acachetools-0.1.4-py3-none-any.whl", hash = "sha256:a14385d547ec464b859b2ba420c563cc01747ae6756c2a187c496a2698ff1198", size = 3412, upload-time = "2026-09-02T07:24:47.266Z" },
-]
-
-[[package]]
 name = "aiohappyeyeballs"
 version = "2.7.1"
 source = { registry = "https://pypi.org/simple" }
@@ -2845,7 +2833,7 @@ dependencies = [
 
 [package.dev-dependencies]
 backend = [
-    { name = "acachetools" },
+    { name = "cachetools" },
     { name = "fastapi" },
     { name = "loguru" },
 ]
@@ -2881,7 +2869,7 @@ requires-dist = [{ name = "python-dotenv", specifier = ">=1.2.4" }]
 
 [package.metadata.requires-dev]
 backend = [
-    { name = "acachetools", specifier = ">=0.1.4" },
+    { name = "cachetools", specifier = ">=8.0.2" },
     { name = "fastapi", specifier = ">=0.162.0" },
     { name = "loguru", specifier = ">=0.7.3" },
 ]
