@@ -13,7 +13,7 @@ services:
     environment:
       - BACKEND_URL=http://backend:8000
     volumes:
-      - guide_cache:/root/app/outputs/guides/_cache
+      - guide_cache:/app/outputs/guides/_cache
     depends_on:
       backend:
         condition: service_healthy
@@ -31,9 +31,9 @@ services:
       - HF_HOME=/root/.cache/huggingface
       - OLLAMA_BASE_URL=http://ollama:11434
     volumes:
-      - data:/root/app/data
-      - indexes:/root/app/indexes
-      - guide_cache:/root/app/outputs/guides/_cache
+      - data:/app/data
+      - indexes:/app/indexes
+      - guide_cache:/app/outputs/guides/_cache
       - hf_cache:/root/.cache/huggingface
     healthcheck:
       test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')"]
