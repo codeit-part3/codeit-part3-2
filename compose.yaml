@@ -13,7 +13,7 @@ services:
     environment:
       - BACKEND_URL=http://backend:8000
     volumes:
-      - guide_cache:/app/outputs/guides/_cache
+      - guide_files:/app/outputs/guides/
     depends_on:
       backend:
         condition: service_healthy
@@ -33,7 +33,7 @@ services:
     volumes:
       - data:/app/data
       - indexes:/app/indexes
-      - guide_cache:/app/outputs/guides/_cache
+      - guide_files:/app/outputs/guides/
       - hf_cache:/root/.cache/huggingface
     healthcheck:
       test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')"]
@@ -111,4 +111,4 @@ volumes:
   # mounted data
   data:
   indexes:
-  guide_cache:
+  guide_files:
