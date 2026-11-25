@@ -745,9 +745,18 @@ def rewrite_followup(question, history):
         if titles:
             org, title = titles[0]
             return f"{org} {title} {question}"
-        if orgs:
+        # #59: 답변(assistant)에만 나온 기관명은 질문 주제와 다를 수 있어(예: 총괄 부처) 건너뜀
+        if orgs and turn.get("role") == "user":
             return f"{orgs[0]} {question}"
 
+    # #59: 사업명을 정확히 못 찾으면(일부만 쓴 경우 등) 앞 사용자 질문을 검색어 앞에 붙임.
+    # "금액은?"처럼 짧은 후속 질문은 건너뛰고, 주제가 담긴 질문(공백 빼고 12자 이상)을 거슬러 올라가 찾음.
+    # 그런 질문이 없으면 바로 앞 사용자 질문을 붙임.
+    user_qs = [t.get("content", "") for t in history if t.get("role") == "user"]
+    anchor = next((q for q in reversed(user_qs) if len(re.sub(r"\s", "", q)) >= 12), "")
+    prev_q = anchor or (user_qs[-1] if user_qs else "")
+    if prev_q:
+        return f"{prev_q} {question}"
     return question
 
 
@@ -866,12 +875,59 @@ _DOCS_CTX = re.compile(
 )  # 조각에 서류 항목이 있는지
 
 
+# #59 스몰토크: 관련 문서 점수가 낮아 거절할 질문 중, 공고 관련 단어도 사업명/기관명도 없으면 잡담으로 보고 짧게 응대
+# (골든셋 v2_4 146문항(일반, 오타)은 모두 아래 단어를 포함해 이 경로를 타지 않음)
+_DOMAIN_Q = re.compile(
+    r"사업|공고|입찰|예산|금액|비용|가격|기관|요구|제안|평가|계약|용역|기간|서류|발주|과업|구축|시스템|참가|자격|낙찰|일정|문서|요청서|원|RFP"
+)
+_SMALLTALK_PROMPT = (
+    "너는 공공 입찰 공고문(제안요청서) 상담 도우미다. 지금 사용자의 말은 공고문과 관계없는 잡담이다.\n"
+    "1) 먼저 사용자의 말에 직접, 자연스럽게 반응한다. 인사에는 인사로, 감사에는 감사로, 질문에는 그 질문에 맞는 답을 한다.\n"
+    "2) 네가 알 수 없거나 볼 수 없는 것(사용자의 외모, 날씨, 뉴스, 개인 정보 등)은 솔직하게 모른다고 하되, 딱딱하지 않게 가볍고 따뜻하게 말한다.\n"
+    "3) 마지막에 한 문장으로만 입찰 공고문에 대해 궁금한 점을 물어보면 도와줄 수 있다고 안내한다. 안내 항목을 길게 나열하지 않는다.\n"
+    "4) 공고문 내용을 묻는 말이면 내용을 추측하지 말고, 공고 문서에서 찾지 못했으니 사업명이나 발주기관을 넣어 다시 질문해 달라고 안내한다.\n"
+    "존댓말로 2~3문장. 앞 대화가 있으면 이어지는 말로 이해한다.\n"
+    "예) 사용자: 나 잘생겼어? -> 제가 얼굴을 볼 수는 없지만, 그렇게 자신 있게 물어보시는 걸 보니 멋진 분일 것 같아요. 입찰 공고문에 대해 궁금한 점이 있으면 편하게 물어봐 주세요."
+)
+
+
+def _is_smalltalk(question):
+    if _DOMAIN_Q.search(question):
+        return False
+    orgs, titles = _extract_entities(question)
+    return not (orgs or titles)
+
+
+def _smalltalk_reply(question, history=None):
+    model, _ = get_resources()
+    result = model.invoke(
+        [
+            SystemMessage(_SMALLTALK_PROMPT),
+            *history_to_messages((history or [])[-4:]),  # 최근 2번 주고받은 대화만
+            HumanMessage(question),
+        ]
+    )
+    usage = getattr(result, "usage_metadata", None) or {}
+    USAGE["calls"] += 1
+    USAGE["input"] += usage.get("input_tokens", 0)
+    USAGE["output"] += usage.get("output_tokens", 0)
+    USAGE["reasoning"] += (usage.get("output_token_details") or {}).get("reasoning", 0)
+    return {
+        "answer": result.text.strip(),
+        "prompt_tokens": usage.get("input_tokens", 0),
+    }
+
+
 def generate(state: RAGState):
     if RERANK and RERANK_CUTOFF is not None and state["retrieved"]:
         top1_score = -state["retrieved"][0][
             1
         ]  # 저장된 값(-점수)을 원래 리랭커 점수로 복원
         if top1_score < RERANK_CUTOFF:
+            if _is_smalltalk(
+                state["question"]
+            ):  # #59: 공고와 관계없는 잡담은 짧게 응대
+                return _smalltalk_reply(state["question"], state.get("history"))
             return {"answer": _REFUSE_MSG, "prompt_tokens": 0}
     model, _ = get_resources()
     question = state["question"]
