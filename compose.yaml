@@ -40,7 +40,7 @@ services:
       interval: 5s
       timeout: 5s
       retries: 10
-      start_period: 60s
+      start_period: 120s
     depends_on:
       ollama-pull:
         condition: service_completed_successfully
