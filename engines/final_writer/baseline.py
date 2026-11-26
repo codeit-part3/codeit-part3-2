@@ -16,7 +16,7 @@ import re
 import threading
 
 from engines.final import baseline as _base
-from engines.final import writer as _writer
+from engines.final_writer import writer as _writer
 
 # ── 표 정리 (모델에게 보여 주는 컨텍스트 글만 다듬음. 문서/인덱스/baseline.py 는 그대로) ──────────────
 # 원문 OCR 표의 문제: ① 깨진 글머리 기호 ② "M1 | M2 | ... | M12" 월 헤더 줄과 12개 빈 칸
