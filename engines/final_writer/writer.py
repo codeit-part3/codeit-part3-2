@@ -38,7 +38,7 @@ final 엔진(#43, 루나 키메라 / 로컬 키메라)용 복사본: engines/rer
 파일 구성: 1 평가표 추출 · 2 문서 찾기 · 3 모델로 안내 쓰기 · 4 docx 만들기 · 4-2 서식 예시
           5 랭그래프 · 6 @tool 과 양식 예시 루브릭 평가 · 맨 아래 CLI(질문 1회 / 대화 모드 / --rubric)
 
-실행 확인:  uv run python -m engines.local_final.writer "질문" [--no-model]
+실행 확인:  uv run python -m engines.final_writer.writer "질문" [--no-model]
 결과 파일은 outputs/guides/ 에 저장됩니다 (outputs 는 git 에 올라가지 않음).
 """
 
@@ -53,13 +53,13 @@ import unicodedata
 from pathlib import Path
 from typing import TypedDict
 
-from engines.local_final import config
+from engines.final import config
 
 ROOT = Path(__file__).resolve().parents[2]
 CORPUS_DIR = ROOT / "data" / config.CORPUS
 OUT_DIR = ROOT / "outputs" / "guides"
 
-# 모델에게 줄 지시문 파일 이름 (engines/local_final/prompts/<이름>.txt). 바꾸면 항목별 안내문의 형식과 말투가 달라진다.
+# 모델에게 줄 지시문 파일 이름 (engines/final/prompts/<이름>.txt). 바꾸면 항목별 안내문의 형식과 말투가 달라진다.
 GUIDE_PROMPT = "guide_v3"
 # 코드 안의 few-shot·필터 규칙이 바뀌면 올린다 (캐시 키에 들어가서 옛 캐시를 쓰지 않게 한다).
 GUIDE_VERSION = "3.2"
@@ -691,7 +691,7 @@ def find_doc(message: str, use_search: bool = True, fuzzy: bool = False):
     try:  # 이름이 정확하지 않으면 검색으로 한 번 더
         if not use_search:
             raise RuntimeError("검색 사용 안 함")
-        from engines.local_final import baseline
+        from engines.final import baseline
 
         hits = baseline.search(message, 1)
         if hits:
@@ -1161,7 +1161,7 @@ def _write_guides(project: str, items: list[dict], use_model: bool):
     try:
         from langchain.messages import HumanMessage, SystemMessage
 
-        from engines.local_final import baseline
+        from engines.final import baseline
 
         model = baseline.make_chat_model()
         system = baseline.load_prompt(GUIDE_PROMPT)
@@ -2460,7 +2460,7 @@ def n_budget_ask(state: GuideState):
 
 def n_budget(state: GuideState):
     """고른 공고의 사업명을 질문 앞에 붙여 일반 질문(검색)으로 보낸다."""
-    from engines.local_final import baseline
+    from engines.final import baseline
 
     p = _budget_doc(state, state["question"])
     q = f"{_budget_label(p)} {_last_user(state.get('history'))}"
@@ -3188,7 +3188,7 @@ def needs_project(state) -> bool:
 
 def n_rag(state: GuideState):
     """입력: question/history. baseline RAG의 답변 문자열을 그대로 answer 로 전달한다."""
-    from engines.local_final import baseline
+    from engines.final import baseline
 
     ranked = rank_answer(state["question"])
     if ranked:
