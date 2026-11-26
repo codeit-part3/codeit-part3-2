@@ -28,6 +28,7 @@ services:
     env_file:
       - .env
     environment:
+      - WRITER_PARALLEL=4
       - HF_HOME=/root/.cache/huggingface
       - OLLAMA_BASE_URL=http://ollama:11434
     volumes:
@@ -73,6 +74,8 @@ services:
     container_name: gguk-ollama
     ports:
       - "11434:11434"
+    environment:
+      - OLLAMA_NUM_PARALLEL=4
     volumes:
       - ollama_data:/root/.ollama
     healthcheck:

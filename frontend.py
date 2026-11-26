@@ -39,7 +39,7 @@ BACKEND_URL = os.getenv("BACKEND_URL")
 # 백엔드 응답을 기다리는 최대 시간(초)입니다. httpx 기본값(5초)은 LLM 답변에 너무 짧아 늘렸습니다.
 # 서버에 아예 연결이 안 될 때는 5초 안에 포기하고, 연결된 뒤 답변을 기다리는 시간만 길게 잡습니다.
 # 환경 변수 BACKEND_TIMEOUT 으로 바꿀 수 있습니다.
-BACKEND_TIMEOUT = httpx.Timeout(float(os.getenv("BACKEND_TIMEOUT", "60")), connect=5.0)
+BACKEND_TIMEOUT = httpx.Timeout(float(os.getenv("BACKEND_TIMEOUT", "300")), connect=5.0)
 
 # 화면 디자인(CSS)은 같은 폴더의 style.css 에 모아 두었습니다.
 CSS_PATH = Path(__file__).parent / "style.css"
