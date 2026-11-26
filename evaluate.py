@@ -25,10 +25,10 @@ import unicodedata
 from datetime import datetime
 
 import pandas as pd
-from engines.local_model import baseline
 from langchain.messages import HumanMessage
 
 import judge
+from engines.local_final import baseline
 
 # 골든셋의 level 을 4개 유형으로 묶습니다. (팀 집계 방식 초안)
 GROUPS = {
@@ -495,7 +495,7 @@ def parse_args():
     )
 
     exp = parser.add_argument_group(
-        "실험 설정 (안 쓰면 engines/local_model/config.py 의 값)"
+        "실험 설정 (안 쓰면 engines/local_final/config.py 의 값)"
     )
     exp.add_argument(
         "--top-k", type=int, default=None, help="검색해서 모델에 넘길 조각 개수"
