@@ -31,6 +31,7 @@ services:
       - WRITER_PARALLEL=4
       - HF_HOME=/root/.cache/huggingface
       - OLLAMA_BASE_URL=http://ollama:11434
+      - HF_HUB_OFFLINE=1
     volumes:
       - data:/app/data
       - indexes:/app/indexes
