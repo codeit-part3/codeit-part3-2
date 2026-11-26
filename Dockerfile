@@ -12,6 +12,7 @@ ENV PYTHONDONTWRITEBYTECODE=1
 WORKDIR /app
 
 COPY pyproject.toml uv.lock ./
+COPY assets ./assets
 
 # hf-pull
 FROM base AS hf-pull
