@@ -7,8 +7,8 @@ B2G 입찰지원 컨설팅 스타트업 '입찰메이트'의 사내 도구를 �
 - **출력**: 공고 원문에 근거한 답변. 공고에 없는 내용은 정보가 없다고 답합니다.
 - **데이터**: 공고 문서 100건 (HWP 96, PDF 4). 본문이 같은 2쌍을 합쳐 98건을 색인했습니다.
 - **평가**: 골든셋 v2.2(74문항)로 단계별 실험을 하고, 정비한 v2.4(73문항)로 최종 성능을 검증했습니다. LLM 채점(gpt-5-nano)을 사용했습니다.
-- **팀**: 꾹꾹이 랩스(6명) / 2026.11.09 ~ 11.30
-- **최종 결과**: 정답률 **91.8%** · 환각률 **2.7%** · 거절 성공률 **100%** · 평균 응답 **1.83초** (고도화 + gpt-6-luna(low), v2.4 73문항 오타 포함 버전. 자세한 내용은 [실험](#실험))
+- **팀**: 꾹꾹이 랩스 (2팀) 6명 / 2026.11.09 ~ 11.30
+- **최종 결과**: 정답률 **91.8%** · 환각률 **2.7%** · 거절 성공률 **100%** · 평균 응답 **1.83초** (고도화 + gpt-6-luna(low), v2.4 73문항 오타 포함 버전. 자세한 내용은 [실험 과정](#실험-과정))
 
 실험 과정 · 분석 · 결론은 [최종 보고서(PDF)](docs/part3_2_ggukgguki_labs_report.pdf)에 정리되어 있습니다.
 
@@ -24,7 +24,7 @@ B2G 입찰지원 컨설팅 스타트업 '입찰메이트'의 사내 도구를 �
 | <img src="https://github.com/headache404.png" width="120" height="120"> | <img src="https://github.com/9enius9un.png" width="120" height="120"> | <img src="https://github.com/KIMRAHUI.png" width="120" height="120"> | <img src="https://github.com/juhee4839.png" width="120" height="120"> | <img src="https://github.com/soul8327.png" width="120" height="120"> | <img src="https://github.com/jylee10279.png" width="120" height="120"> |
 |:---:|:---:|:---:|:---:|:---:|:---:|
 | **[서동현](https://github.com/headache404)** | **[김건](https://github.com/9enius9un)** | **[김라희](https://github.com/KIMRAHUI)** | **[김주희](https://github.com/juhee4839)** | **[신재민](https://github.com/soul8327)** | **[이주엽](https://github.com/jylee10279)** |
-| 팀장 · 리드 · 속도 개선 | Baseline · 모델 비교 | 엔진 고도화 · 작성도우미 | 오타 강건성 · 프론트 | 청킹 · 검색 실험 | 백엔드 · 배포 |
+| 팀장 · 리드 · 속도 개선 | Baseline · 모델 비교 | 엔진 고도화 · 작성 도우미 | 오타 강건성 · 프론트 | 청킹 · 검색 실험 | 백엔드 · 배포 |
 
 </div>
 
