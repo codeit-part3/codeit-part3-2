@@ -245,7 +245,9 @@ indexes/                    벡터DB
 
 [![상위 20개 실험 Accuracy vs Correctness](https://docs.google.com/spreadsheets/d/e/2PACX-1vQG78D2W8_Vgm00fcaufspqEPmnppqy--TrK6tlBtZlVU98vokcwpEI4B7aqLpfw-D6Uc8wdT4-JtEy/pubchart?oid=678058960&format=image)](https://docs.google.com/spreadsheets/d/e/2PACX-1vQG78D2W8_Vgm00fcaufspqEPmnppqy--TrK6tlBtZlVU98vokcwpEI4B7aqLpfw-D6Uc8wdT4-JtEy/pubchart?oid=678058960&format=interactive)
 
-이미지를 클릭하면 마우스를 올려 실험 메모를 볼 수 있는 인터랙티브 차트가 열립니다(자세한 실험 내용은 [실험 결과](*실험자료링크*)).
+이미지를 클릭하면 마우스를 올려 실험 메모를 볼 수 있는 인터랙티브 차트가 열립니다
+
+> 실험 원칙, 검색과 답변 개선, 모델 비교, 통합 엔진 스위치, 작성 도우미 평가, 한계는 [실험 과정](https://app.notion.com/p/42577fa64f7f80029e70ea4246b3c284)에 정리했습니다.
 
 ## 사전 준비
 
@@ -296,7 +298,7 @@ docker compose up -d --build
 - 기동 순서: `ollama` → `ollama-pull` · `hf-pull`(모델 다운로드) → `backend` → `frontend`
 - 화면 http://localhost:7860 / 백엔드 http://localhost:8000
 
-### Container
+#### Container
 
 | 이름 | 포트 | 역할 |
 |---|---|---|
@@ -306,7 +308,7 @@ docker compose up -d --build
 | ollama-pull | - | 모델 자동 다운로드 (초기화용) |
 | hf-pull | - | Re-rank 모델 사전 캐싱 |
 
-### Named Volume
+#### Named Volume
 
 컨테이너 재시작 및 재배포 시 데이터가 초기화되는 것을 방지하여 불필요한 재다운로드 및 반복 연산을 줄인다
 
