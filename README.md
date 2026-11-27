@@ -424,5 +424,5 @@ uv run python evaluate.py --engine agent --no-judge
 
 ## 보고서 · 발표 자료
 
-[📝보고서](docs/part3_2_ggukgguki_labs_report.pdf) |
+[📝보고서](docs/part3_2_ggukgguki_labs_report.pdf) \
 [📝발표 자료](./docs/part3_2_ggukgguki_labs_ppt.pdf) |
