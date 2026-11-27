@@ -12,6 +12,29 @@ B2G 입찰지원 컨설팅 스타트업 '입찰메이트'의 사내 도구를 �
 
 실험 과정 · 분석 · 결론은 [최종 보고서(PDF)](docs/part3_2_ggukgguki_labs_report.pdf)에 정리되어 있습니다.
 
+
+## 팀
+
+<div align="center">
+
+### 꾹꾹이 랩스 (2팀)
+
+| <img src="https://github.com/headache404.png" width="120" height="120"> | <img src="https://github.com/9enius9un.png" width="120" height="120"> | <img src="https://github.com/KIMRAHUI.png" width="120" height="120"> | <img src="https://github.com/juhee4839.png" width="120" height="120"> | <img src="https://github.com/soul8327.png" width="120" height="120"> | <img src="https://github.com/jylee10279.png" width="120" height="120"> |
+|:---:|:---:|:---:|:---:|:---:|:---:|
+| **[서동현](https://github.com/headache404)** | **[김건](https://github.com/9enius9un)** | **[김라희](https://github.com/KIMRAHUI)** | **[김주희](https://github.com/juhee4839)** | **[신재민](https://github.com/soul8327)** | **[이주엽](https://github.com/jylee10279)** |
+| 팀장 | 모델 비교 | 엔진 개선 | 오타 강건성 · 프론트 | 청킹 · 검색 실험 | 백엔드 · 배포 |
+
+</div>
+
+| 이름 | 주요 작업 |
+|---|---|
+| 서동현 | Top-K 비교, 단계별 지연 분석, 프롬프트 개선, 워밍업 순서 |
+| 김건 | 임베딩 6종과 로컬 · 클라우드 답변 모델 비교, v2.4 재검증 |
+| 김라희 | 베이스라인 엔진 개선과 실험 (프롬프트 · 창 크기, 다중 사업 검색, 후보 수, 거절 문구, 금액 단위), 작성 도우미 |
+| 김주희 | 오타 강건성 실험, 평가 지표 계획, 프론트 디자인 |
+| 신재민 | 청크 크기 · 오버랩, 청킹과 검색 방식(Dense / BM25 / Hybrid) 비교, 골든셋 점검 |
+| 이주엽 | FastAPI 백엔드와 인증, 엔진 연결, Docker Compose, GCP VM 배포 |
+
 ## 목차
 
 - [기술 스택](#기술-스택)
@@ -126,8 +149,7 @@ docker compose up -d --build
 
 | 볼륨 | 목적 |
 |---|---|
-| `ollama_data` | 모델 재다운로드 방지 |
-| `hf_cache` | 재순위 모델 재다운로드 방지 |
+| `ollama_data`, `hf_cache` | 모델 재다운로드 방지 |
 | `data`, `indexes` | 데이터와 벡터 DB 영속화 |
 | `guide_files` | 작성 도우미 가이드 캐시 보존 (공고별 생성에 1~2분이 걸려 재생성을 막음) |
 
@@ -315,17 +337,6 @@ curl -X POST http://localhost:8000/chat/ \
 | 엔진 로딩 실패 | 503 | 로그 기록 후 응답 |
 | 응답 생성 실패 | 500 | 로그 기록, 대화 기록 저장 생략 |
 
-### 이슈와 해결
-
-- **인증 적용 후 500 오류**: `Depends`를 요청 모델 매개변수에 붙여 검사 함수의 반환값(None)이 요청 객체로 전달되었습니다. 라우터 `dependencies`로 옮겨 검사와 요청 데이터를 분리했습니다.
-- **컨테이너에서 엔진 로딩 실패 (Connection refused)**: Ollama 주소가 `localhost`로 고정되어 컨테이너 자신을 가리켰습니다. 주소를 환경 변수로 분리하고 compose에서 서비스 이름(`http://ollama:11434`)으로 지정했습니다.
-- **교착 상태(Dead Lock)**: 히스토리 갱신 시 `threading.Lock` 안에서 락이 걸린 조회 함수를 다시 호출했습니다. 조회 함수 호출 대신 메모리를 직접 조회하도록 바꿨습니다.
-- **호스트와 컨테이너의 포트(11434) 충돌**: GCP VM에 설치된 Ollama 데몬이 포트를 점유했습니다. 호스트의 ollama 서비스를 중지하고 컨테이너 한 곳에서만 관리하도록 바꿨습니다.
-- **서버 부팅 실패 (모델 확인 대기)**: 엔진이 내려받은 모델을 바로 쓰지 않고 원격에 최신 모델을 확인하며 무한 대기했습니다. backend 컨테이너를 오프라인 모드로 설정해 저장된 모델만 쓰도록 했습니다.
-
-### 향후 개선
-
-사용자별 인증(팀원별 키 또는 토큰), 요청별 상관 ID와 엔진별 응답 시간 로깅, 재시작 후에도 남는 세션 저장소(SQLite 등), 요청 횟수와 최대 길이 제한, GitHub Actions 기반 CI/CD와 방화벽 허용 범위 축소를 검토하고 있습니다.
 
 ## 실험 결과
 
@@ -490,27 +501,6 @@ gpt-6 계열은 답변을 완전히 고정할 수 없어 같은 설정도 결과
 `.pre-commit-config.yaml`에 정리 규칙이 있고, 커밋할 때와 PR을 올릴 때 같은 검사가 돌아갑니다.
 직접 돌려 보려면 `uvx prek run --all-files`.
 
-## 팀
-
-<div align="center">
-
-### 꾹꾹이 랩스 (2팀)
-
-| <img src="https://github.com/headache404.png" width="120" height="120"> | <img src="https://github.com/9enius9un.png" width="120" height="120"> | <img src="https://github.com/KIMRAHUI.png" width="120" height="120"> | <img src="https://github.com/juhee4839.png" width="120" height="120"> | <img src="https://github.com/soul8327.png" width="120" height="120"> | <img src="https://github.com/jylee10279.png" width="120" height="120"> |
-|:---:|:---:|:---:|:---:|:---:|:---:|
-| **[서동현](https://github.com/headache404)** | **[김건](https://github.com/9enius9un)** | **[김라희](https://github.com/KIMRAHUI)** | **[김주희](https://github.com/juhee4839)** | **[신재민](https://github.com/soul8327)** | **[이주엽](https://github.com/jylee10279)** |
-| 팀장 | 모델 비교 | 엔진 개선 | 오타 강건성 · 프론트 | 청킹 · 검색 실험 | 백엔드 · 배포 |
-
-</div>
-
-| 이름 | 주요 작업 | 협업 일지 |
-|---|---|---|
-| 서동현 | Top-K 비교, 단계별 지연 분석, 프롬프트 개선, 워밍업 순서 | [협업 일지](https://app.notion.com/p/40f77fa64f7f803db89ffc7206703cc3?source=copy_link) |
-| 김건 | 임베딩 6종과 로컬 · 클라우드 답변 모델 비교, v2.4 재검증 | [협업 일지](https://app.notion.com/p/40f77fa64f7f802c998fd9670e7efa66?source=copy_link) |
-| 김라희 | 베이스라인 엔진 개선과 실험 (프롬프트 · 창 크기, 다중 사업 검색, 후보 수, 거절 문구, 금액 단위), 작성 도우미 | [협업 일지](https://app.notion.com/p/40f77fa64f7f80d29398f9eef19d229a?source=copy_link) |
-| 김주희 | 오타 강건성 실험, 평가 지표 계획, 프론트 디자인 | [협업 일지](https://app.notion.com/p/40f77fa64f7f8051acddfd0718139e6d?source=copy_link) |
-| 신재민 | 청크 크기 · 오버랩, 청킹과 검색 방식(Dense / BM25 / Hybrid) 비교, 골든셋 점검 | [협업 일지](https://app.notion.com/p/40f77fa64f7f80418065d1c7eef28a33?source=copy_link) |
-| 이주엽 | FastAPI 백엔드와 인증, 엔진 연결, Docker Compose, GCP VM 배포 | [협업 일지](https://app.notion.com/p/40f77fa64f7f808c9718c92bb7b3d518?source=copy_link) |
 
 ## 보고서 · 발표 자료
 
