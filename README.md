@@ -10,10 +10,11 @@ B2G 입찰지원 컨설팅 스타트업 '입찰메이트'의 사내 도구를 �
 - **팀**: 꾹꾹이 랩스 (2팀) 6명 / 2026.11.09 ~ 11.30
 - **최종 결과**: 정답률 **91.8%** · 환각률 **2.7%** · 거절 성공률 **100%** · 평균 응답 **1.83초** (고도화 + gpt-6-luna(low), v2.4 73문항 오타 포함 버전. 자세한 내용은 [실험 결과](#실험-결과))
 
-실험 과정 · 분석 · 결론은 [최종 보고서(PDF)](docs/report.pdf)에 정리되어 있습니다.
+실험 과정 · 분석 · 결론은 [최종 보고서(PDF)](docs/part3_2_ggukgguki_labs_report.pdf)에 정리되어 있습니다.
 
 ## 목차
 
+- [기술 스택](#기술-스택)
 - [시작하기](#시작하기)
 - [실행](#실행)
 - [시스템 구조](#시스템-구조)
@@ -26,7 +27,24 @@ B2G 입찰지원 컨설팅 스타트업 '입찰메이트'의 사내 도구를 �
 - [코드 스타일](#코드-스타일)
 - [팀](#팀)
 - [보고서 · 발표 자료](#보고서--발표-자료)
-- [협업 일지](#협업-일지)
+
+## 기술 스택
+
+| 분류 | 기술 | 쓰임과 선택 이유 |
+|---|---|---|
+| 언어와 환경 | Python 3.12, uv | `uv.lock`으로 팀원 6명이 같은 환경을 쓰고, 컨테이너마다 필요한 의존성 그룹만 설치 |
+| 문서 변환 | olefile(자체 HWP 변환기), kordoc | HWP 96건은 표 구조까지 직접 변환(원본 표 칸 99.81% 보존), PDF 4건과 그림 속 글자(OCR)는 kordoc |
+| 임베딩 | embeddinggemma (Ollama) | 임베딩 비교에서 근거@5 0.96으로 가장 높았고, 초기 조건 6종 비교에서도 정답 조각 검색이 가장 좋았음 |
+| 재순위화 | bge-reranker-v2-m3 (sentence-transformers, PyTorch) | 근거@1 0.61 → 0.83. 1위 점수를 거절(0.5 미만)과 생각 모드 분기(0.995 이상) 기준으로도 사용 |
+| 벡터 DB | Chroma (langchain-chroma) | 머리말을 붙인 조각 7,324개 저장 |
+| 답변 모델 | gemma4:e2b (Ollama), gpt-6-luna(low) (OpenAI) | 로컬 모델은 외부 전송 없이 동작, gpt-6-luna는 정답률 91.8%, 응답 1.83초로 목표 지표를 모두 충족 |
+| 오케스트레이션 | LangChain, LangGraph | retrieve, generate 두 노드의 고정 파이프라인. 개선 조건을 스위치로 붙였다 뗄 수 있게 구성 |
+| 작성 도우미 | python-docx | 평가표를 읽어 만든 작성 가이드를 Word 문서로 생성 |
+| 백엔드 | FastAPI, cachetools, loguru | 엔진 사전 로딩, API 키 인증, 세션별 대화 기록(TTLCache, 30분) |
+| 화면 | Gradio | 파이썬만으로 채팅 화면 구현 |
+| 평가와 기록 | gpt-5-nano(LLM 채점), 구글 시트 | 정답률, 환각률 등을 채점하고 실험 결과를 시트에 자동 기록 |
+| 배포 | Docker Compose, GCP VM (NVIDIA L4 1개) | 화면, 백엔드, 모델 서버를 컨테이너로 묶어 기동 순서까지 제어 |
+| 협업 | GitHub 이슈와 PR, pre-commit(ruff), Notion | 이슈 → 브랜치 → PR 흐름, 커밋 전 자동 검사, 팀원별 협업 일지 |
 
 ## 시작하기
 
@@ -178,14 +196,7 @@ flowchart LR
 | `final` | 고성능 꾹꾹이 | OpenAI gpt-6-luna 답변 |
 | `final_writer` | 작성 꾹꾹이 | 가이드 · 서식 · 검색 답변, Word 문서 생성 |
 
-| 구분 | 기술 |
-|---|---|
-| 검색 | embeddinggemma, bge-reranker-v2-m3, Chroma |
-| 생성 | gemma4:e2b (Ollama), gpt-6-luna(low) (OpenAI) |
-| 오케스트레이션 | LangChain, LangGraph |
-| 서비스 | FastAPI, Gradio, Docker Compose |
-| 평가 · 기록 | gpt-5-nano 채점, 구글 시트 |
-| 배포 | GCP VM (NVIDIA L4 1개) |
+사용한 기술과 선택 이유는 [기술 스택](#기술-스택)에 정리했습니다.
 
 ### 질문 처리 흐름 (final · local_final)
 
@@ -356,6 +367,7 @@ Baseline과 고도화를 답변 모델(gemma4:e2b, gpt-6-luna)별로 비교했�
 | 실험 | 결과 | 반영 |
 |---|---|---|
 | 임베딩 비교 | 근거@5: EmbeddingGemma 0.96, KURE-v1 0.89, BGE-M3 0.87, BM25 0.71 | embeddinggemma 사용 |
+| 임베딩 6종 (초기 조건) | 정답 조각 검색 성공률: embeddinggemma 37.7%, snowflake-arctic-embed2 34.4%, bge-m3 31.1%, qwen3-embedding 4b 29.5%, 0.6b 23.0%, granite-embedding 19.7% (조각 500, 상위 3개, 검색만 61문항) | embeddinggemma 유지 |
 | 청크 머리말 | BM25 기준 근거@5 0.60 → 0.78 (+0.18) | 사용 |
 | 청크 크기 | 규칙 정확도 500/100 58.1% → 1500/100 64.9%. 응답 시간이 늘어 단독 결과로 단정하지 않음 | 1500 사용 (전체 실험과 함께 확정) |
 | 재순위화 | 근거@1 0.61 → 0.83, MRR 0.72 → 0.90 | 사용 |
@@ -369,7 +381,7 @@ Baseline과 고도화를 답변 모델(gemma4:e2b, gpt-6-luna)별로 비교했�
 | 프롬프트와 워밍업 | 프롬프트 v4 -26%, 워밍업 순서 변경으로 응답 약 0.95초 → 0.62초 | 사용 |
 | 오타 교정(query_fix) | 오타 질문 회복률 중간 1.00, 심함 0.75 (기준 0.5) | 통합 엔진에서 사용 |
 | 에이전트 vs RAG | 에이전트 71.6% / 4.83초, RAG 78.4% / 2.84초 | RAG 사용 |
-| 답변 모델 (로컬) | gemma4 · EXAONE 3.5 · qwen3 비교. 모델 간 읽기 능력 차이가 작음 | gemma4:e2b 유지 |
+| 답변 모델 (로컬) | gemma4(e2b, e4b), EXAONE 3.5(2.4B, 7.8B), qwen3:4b-instruct 정답률 35.1~41.9%. 정답 조각을 받은 문항의 정답률은 78.3~87.0%로 비슷하고, 차이는 지어낸 답(12.2~27.0%)에서 남 | gemma4:e2b 유지 |
 | 답변 모델 (클라우드) | gpt-6-luna(low) 87.2% / 2.08초, gpt-5-mini 85.8% / 4.99초, 로컬 팀 기준 82.4% / 9.43초 | gpt-6-luna(low) 사용 |
 | BM25 하이브리드 | 뚜렷한 개선이 없었음 | 사용하지 않음 |
 | 기관명 필터 | MRR +0.8%p로 통과 기준 미달 | 사용하지 않음 |
@@ -491,31 +503,18 @@ gpt-6 계열은 답변을 완전히 고정할 수 없어 같은 설정도 결과
 
 </div>
 
-| 이름 | 주요 작업 |
-|---|---|
-| 서동현 | Top-K 비교, 단계별 지연 분석, 프롬프트 개선, 워밍업 순서 |
-| 김건 | 임베딩 6종과 로컬 · 클라우드 답변 모델 비교, v2.4 재검증 |
-| 김라희 | 베이스라인 엔진 개선과 실험 (프롬프트 · 창 크기, 다중 사업 검색, 후보 수, 거절 문구, 금액 단위), 작성 도우미 |
-| 김주희 | 오타 강건성 실험, 평가 지표 계획, 프론트 디자인 |
-| 신재민 | 청크 크기 · 오버랩, 청킹과 검색 방식(Dense / BM25 / Hybrid) 비교, 골든셋 점검 |
-| 이주엽 | FastAPI 백엔드와 인증, 엔진 연결, Docker Compose, GCP VM 배포 |
+| 이름 | 주요 작업 | 협업 일지 |
+|---|---|---|
+| 서동현 | Top-K 비교, 단계별 지연 분석, 프롬프트 개선, 워밍업 순서 | [협업 일지](https://app.notion.com/p/40f77fa64f7f803db89ffc7206703cc3?source=copy_link) |
+| 김건 | 임베딩 6종과 로컬 · 클라우드 답변 모델 비교, v2.4 재검증 | [협업 일지](https://app.notion.com/p/40f77fa64f7f802c998fd9670e7efa66?source=copy_link) |
+| 김라희 | 베이스라인 엔진 개선과 실험 (프롬프트 · 창 크기, 다중 사업 검색, 후보 수, 거절 문구, 금액 단위), 작성 도우미 | [협업 일지](https://app.notion.com/p/40f77fa64f7f80d29398f9eef19d229a?source=copy_link) |
+| 김주희 | 오타 강건성 실험, 평가 지표 계획, 프론트 디자인 | [협업 일지](https://app.notion.com/p/40f77fa64f7f8051acddfd0718139e6d?source=copy_link) |
+| 신재민 | 청크 크기 · 오버랩, 청킹과 검색 방식(Dense / BM25 / Hybrid) 비교, 골든셋 점검 | [협업 일지](https://app.notion.com/p/40f77fa64f7f80418065d1c7eef28a33?source=copy_link) |
+| 이주엽 | FastAPI 백엔드와 인증, 엔진 연결, Docker Compose, GCP VM 배포 | [협업 일지](https://app.notion.com/p/40f77fa64f7f808c9718c92bb7b3d518?source=copy_link) |
 
 ## 보고서 · 발표 자료
 
 | 자료 | 파일 |
 |---|---|
 | 최종 보고서 | [part3_2_ggukgguki_labs_report.pdf](docs/part3_2_ggukgguki_labs_report.pdf) |
-| 최종 발표 | [part3_2_ggukgguki_labs_presentation.pdf](docs/part3_2_ggukgguki_labs_report.pdf) |
-
-## 협업 일지
-
-팀원별 협업 일지입니다. 링크를 누르면 해당 팀원의 Notion 페이지로 이동합니다.
-
-| 팀원 | 일지 |
-|---|---|
-| 서동현 | [협업 일지](https://app.notion.com/p/40f77fa64f7f803db89ffc7206703cc3?source=copy_link) |
-| 김건 | [협업 일지](https://app.notion.com/p/40f77fa64f7f802c998fd9670e7efa66?source=copy_link) |
-| 김주희 | [협업 일지](https://app.notion.com/p/40f77fa64f7f8051acddfd0718139e6d?source=copy_link) |
-| 김라희 | [협업 일지](https://app.notion.com/p/40f77fa64f7f80d29398f9eef19d229a?source=copy_link) |
-| 이주엽 | [협업 일지](https://app.notion.com/p/40f77fa64f7f808c9718c92bb7b3d518?source=copy_link) |
-| 신재민 | [협업 일지](https://app.notion.com/p/40f77fa64f7f80418065d1c7eef28a33?source=copy_link) |
+| 최종 발표 | [part3_2_ggukgguki_labs_presentation.pdf](docs/part3_2_ggukgguki_labs_presentation.pdf) |
