@@ -8,6 +8,7 @@ repos:
       - id: check-json
       - id: check-toml
       - id: check-added-large-files  # 큰 파일 커밋 방지
+        exclude: \.(pdf|pptx)$       # PDF, PPTX는 예외
       - id: check-merge-conflict     # 충돌 표시 남은 파일 방지
 
   - repo: https://github.com/astral-sh/ruff-pre-commit
