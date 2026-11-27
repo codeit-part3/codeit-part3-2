@@ -7,7 +7,7 @@ B2G 입찰지원 컨설팅 스타트업 '입찰메이트'의 사내 도구를 �
 - **출력**: 공고 원문에 근거한 답변. 공고에 없는 내용은 정보가 없다고 답합니다.
 - **데이터**: 공고 문서 100건 (HWP 96, PDF 4). 본문이 같은 2쌍을 합쳐 98건을 색인했습니다.
 - **평가**: 골든셋 v2.2(74문항)로 단계별 실험을 하고, 정비한 v2.4(73문항)로 최종 성능을 검증했습니다. LLM 채점(gpt-5-nano)을 사용했습니다.
-- **팀**: 꾹꾹이 랩스 (2팀) 6명 / 2026.11.09 ~ 11.30
+- **팀**: 꾹꾹이 랩스(6명) / 2026.11.09 ~ 11.30
 - **최종 결과**: 정답률 **91.8%** · 환각률 **2.7%** · 거절 성공률 **100%** · 평균 응답 **1.83초** (고도화 + gpt-6-luna(low), v2.4 73문항 오타 포함 버전. 자세한 내용은 [실험 과정](#실험-과정))
 
 실험 과정 · 분석 · 결론은 [최종 보고서(PDF)](docs/part3_2_ggukgguki_labs_report.pdf)에 정리되어 있습니다.
@@ -424,7 +424,5 @@ uv run python evaluate.py --engine agent --no-judge
 
 ## 보고서 · 발표 자료
 
-| 자료 | 파일 |
-|---|---|
-| 보고서 | [part3_2_ggukgguki_labs_report.pdf](docs/part3_2_ggukgguki_labs_report.pdf) |
-| 발표 자료 | [part3_2_ggukgguki_labs_presentation.pptx](docs/part3_2_ggukgguki_labs_presentation.pptx) |
+[📝보고서](docs/part3_2_ggukgguki_labs_report.pdf) |
+[📝발표 자료](./docs/part3_2_ggukgguki_labs_ppt.pdf) |
