@@ -22,7 +22,7 @@ B2G 입찰지원 컨설팅 스타트업 '입찰메이트'의 사내 도구를 �
 | <img src="https://github.com/headache404.png" width="120" height="120"> | <img src="https://github.com/9enius9un.png" width="120" height="120"> | <img src="https://github.com/KIMRAHUI.png" width="120" height="120"> | <img src="https://github.com/juhee4839.png" width="120" height="120"> | <img src="https://github.com/soul8327.png" width="120" height="120"> | <img src="https://github.com/jylee10279.png" width="120" height="120"> |
 |:---:|:---:|:---:|:---:|:---:|:---:|
 | **[서동현](https://github.com/headache404)** | **[김건](https://github.com/9enius9un)** | **[김라희](https://github.com/KIMRAHUI)** | **[김주희](https://github.com/juhee4839)** | **[신재민](https://github.com/soul8327)** | **[이주엽](https://github.com/jylee10279)** |
-| 팀장 | 모델 비교 | 엔진 개선 | 오타 강건성 · 프론트 | 청킹 · 검색 실험 | 백엔드 · 배포 |
+| 팀장 · 리드 · 속도 개선 | Baseline · 모델 비교 | 엔진 고도화 · 작성도우미 | 오타 강건성 · 프론트 | 청킹 · 검색 실험 | 백엔드 · 배포 |
 
 </div>
 
