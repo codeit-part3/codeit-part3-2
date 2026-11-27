@@ -542,5 +542,5 @@ curl -X POST http://localhost:8000/chat/ \
 
 | 자료 | 파일 |
 |---|---|
-| 최종 보고서 | [part3_2_ggukgguki_labs_report.pdf](docs/part3_2_ggukgguki_labs_report.pdf) |
-| 최종 발표 | [part3_2_ggukgguki_labs_presentation.pdf](docs/part3_2_ggukgguki_labs_presentation.pdf) |
+| 최종 보고서 [part3_2_ggukgguki_labs_report.pdf](docs/part3_2_ggukgguki_labs_report.pdf) |
+| 최종 발표 [part3_2_ggukgguki_labs_presentation.pdf](docs/part3_2_ggukgguki_labs_presentation.pdf) |
